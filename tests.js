@@ -20,7 +20,7 @@
     console.log(A.pushChild);
     A.pushChild(B);
     B.pushChild(C);
-    return ubigraph.visualise(A, function(node){
+    return ubigraph.visualize(A, function(node){
       return node.getChildren();
     }, function(node){
       return node.name;

@@ -18,7 +18,7 @@ testone = ->
   A.pushChild(B)
   B.pushChild(C)
   
-  ubigraph.visualise A, ((node) -> node.getChildren()), ((node) -> node.name )  
+  ubigraph.visualize A, ((node) -> node.getChildren()), ((node) -> node.name )  
   
 
 testone()
