@@ -38,8 +38,14 @@
       if (options.name) {
         this.name = options.name;
       }
-      return this.plugs = h.dictmap(this.plugs || {}, function(name){
-        return this$[name] = new Backbone.Collection();
+      return this.plugs = h.dictmap(this.plugs || {}, function(options, name){
+        var c;
+        c = new Backbone.Collection();
+        if (this$[name]) {
+          this$["_" + name] = this$[name];
+        }
+        this$[name] = c;
+        return c;
       });
     },
     plugPush: function(plug, obj){

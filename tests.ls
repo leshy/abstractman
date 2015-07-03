@@ -9,7 +9,7 @@ require! {
 
 
 
-testone = ->
+ubi = (test) ->
   A = new abstractMan.DirectedGraphNode name: 'A'
   B = new abstractMan.DirectedGraphNode name: 'B'
   C = new abstractMan.DirectedGraphNode name: 'C'
@@ -18,6 +18,22 @@ testone = ->
   B.pushChild(C)
   
   ubigraph.visualize A, ((node) -> node.getChildren()), ((node) -> node.name )  
-  
+  test.done()
 
-testone()
+exports.stateMbasic = (test) ->
+  Machine = abstractMan.StateMachine.extend4000 { name: 'test machine', start: 'state_a' }
+
+  statea = Machine.defineState 'state_a', { children: [ 'state_b' ]}
+  Machine.defineState 'state_b', { children: [ 'state_c' ]}
+  Machine.defineState 'state_c', { children: [ 'state_a' ]}
+  
+  stated = statea.childState 'state_d', {}
+  stated.addChild 'state_a'
+  
+  machine = new Machine
+  
+  machine.ubigraph()
+
+  machine.changeState 'state_b'
+
+  test.done()    

@@ -34,7 +34,11 @@ GraphNode = exports.GraphNode = Backbone.Model.extend4000(
   initialize: (options) ->
     if options.name then @name = options.name
       
-    @plugs = h.dictmap (@plugs or {}), (name) ~> @[name] = new Backbone.Collection()
+    @plugs = h.dictmap (@plugs or {}), (options,name) ~>
+      c = new Backbone.Collection()
+      if @[name] then @["_" + name] = @[name]
+      @[name] = c
+      c
     
   plugPush: (plug,obj) -> @plugs[plug].push obj
   plugPop: (plug) ->  @plugs[plug].pop()
