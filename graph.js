@@ -14,7 +14,7 @@
       options = _.extend({
         singular: name
       }, options);
-      cls.prototype['push' + h.capitalize(options.singular)] = function(obj){
+      cls.prototype['push' + h.capitalize(options.singular)] = cls.prototype['push' + h.capitalize(name)] = cls.prototype['add' + h.capitalize(options.singular)] = cls.prototype['add' + h.capitalize(name)] = function(obj){
         return this.plugPush(name, obj);
       };
       cls.prototype['pop' + h.capitalize(options.singular)] = function(obj){
@@ -34,11 +34,12 @@
     mergers: [Backbone.metaMerger.mergeDict('plugs')],
     transformers: [metaPlug],
     initialize: function(options){
+      var this$ = this;
       if (options.name) {
         this.name = options.name;
       }
-      return this.plugs = h.dictmap(this.plugs || {}, function(){
-        return new Backbone.Collection();
+      return this.plugs = h.dictmap(this.plugs || {}, function(name){
+        return this$[name] = new Backbone.Collection();
       });
     },
     plugPush: function(plug, obj){

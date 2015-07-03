@@ -13,8 +13,7 @@ testone = ->
   A = new abstractMan.DirectedGraphNode name: 'A'
   B = new abstractMan.DirectedGraphNode name: 'B'
   C = new abstractMan.DirectedGraphNode name: 'C'
-
-  console.log A.pushChild
+  
   A.pushChild(B)
   B.pushChild(C)
   

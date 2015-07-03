@@ -17,7 +17,6 @@
     C = new abstractMan.DirectedGraphNode({
       name: 'C'
     });
-    console.log(A.pushChild);
     A.pushChild(B);
     B.pushChild(C);
     return ubigraph.visualize(A, function(node){
