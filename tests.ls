@@ -7,8 +7,6 @@ require! {
   ubigraph: ubigraph
 }
 
-
-
 ubi = (test) ->
   A = new abstractMan.DirectedGraphNode name: 'A'
   B = new abstractMan.DirectedGraphNode name: 'B'
@@ -27,7 +25,7 @@ exports.stateMbasic = (test) ->
   Machine.defineState 'state_b', { children: [ 'state_c' ]}
   Machine.defineState 'state_c', { children: [ 'state_a' ]}
   
-  stated = statea.childState 'state_d', {}
+  stated = statea.defineChild 'state_d', {}
   stated.addChild 'state_a'
   
   machine = new Machine

@@ -18,21 +18,27 @@
       var this$ = this;
       _.extend(this, options);
       return this.root.when('ready', function(){
+        if (this$.child) {
+          this$._children = h.push(this$._children, this$.child);
+        }
         return _.map(this$._children || [], function(it){
-          console.log('addchild!');
           return this$.addChild(this$.root.states[it]);
         });
       });
     },
     changeState: function(name){
       var newState;
-      console.log('changestate!', name);
-      newState = this.children.find(function(state){
-        return state.name === name;
-      });
-      if (!newState) {
-        throw new Error("state transition invalid (" + this.name + " -> " + name + " )");
+      if ((name != null ? name.constructor : void 8) === String) {
+        newState = this.children.find(function(state){
+          return state.name === name;
+        });
+      } else {
+        newState = name;
       }
+      if (!newState) {
+        return console.log("WARNING: state with name " + name + " not found in my children (" + this.name + ")");
+      }
+      console.log('changestate!', newState.name);
       this.leave();
       return newState.visit();
     },
@@ -56,6 +62,7 @@
     }
   });
   StateMachine = exports.StateMachine = Backbone.Model.extend4000({
+    stateClass: State,
     initialize: function(options){
       var this$ = this;
       this.states = h.dictMap(this.states || {}, function(state, name){
@@ -91,7 +98,7 @@
   });
   StateMachine.defineState = function(name, stateClass){
     stateClass || (stateClass = {});
-    stateClass = State.extend4000(stateClass, {
+    stateClass = this.prototype.stateClass.extend4000(stateClass, {
       name: name,
       rootClass: this
     });
@@ -100,16 +107,13 @@
     }
     return this.prototype.states[name] = stateClass;
   };
-  State.childState = function(name, cls){
+  State.defineChild = function(name, cls){
     var newState;
     this.addChild(name);
     newState = this.prototype.rootClass.defineState(name, cls);
     return newState;
   };
   State.addChild = function(name){
-    if (!this.prototype.children) {
-      this.prototype.children = [];
-    }
-    return this.prototype.children.push(name);
+    return this.prototype.children = h.push(this.prototype.children, name);
   };
 }).call(this);

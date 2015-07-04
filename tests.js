@@ -41,7 +41,7 @@
     Machine.defineState('state_c', {
       children: ['state_a']
     });
-    stated = statea.childState('state_d', {});
+    stated = statea.defineChild('state_d', {});
     stated.addChild('state_a');
     machine = new Machine;
     machine.ubigraph();
