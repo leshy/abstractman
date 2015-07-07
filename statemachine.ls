@@ -18,39 +18,59 @@ State = exports.State = graph.DirectedGraphNode.extend4000(
     @root.when 'ready', ~>
       if @child then @_children = h.push @_children, @child
       _.map (@_children or []), ~> @addChild @root.states[it]
-      
-  changeState: (name) ->
-    
-    if name?@@ is String
-      newState = @children.find (state) -> state.name is name
-    else
-      newState = name
-    if not newState then return console.log "WARNING: state with name #{name} not found in my children (#{@name})"
-    console.log 'changestate!', newState.name      
-    #if not newState then throw new Error "state transition invalid (#{@name} -> #{name} )"    
-    @leave()
-    newState.visit()
-    
+
+  active: ->
+    @set active: false
+    @trigger 'leave'
+
   leave: ->
     @set active: false
     @trigger 'leave'
-    
+        
   visit: ->
+    if @get 'active' then return
     console.log 'state', @name, 'is now active'
     @set visited: true, active: true
     @trigger 'visit'
     @root.set state: @
     @root.trigger 'changeState'
-)
+            
+  changeState: (searchState) ->
+    newState = switch searchState?@@
+      | undefined => throw new Error 'was ist das'
+      | Number => @children.find (state) -> state.n is searchState
+      | String => @children.find (state) -> state.name is searchState
+
+    if not newState then newState = @children.find (state) -> state is searchState
+
+    if not newState then throw new Error "state #{searchState} not found in my children (#{@name})"
+      
+    @leave(); newState.visit()
+)    
+
+State.defineChild = (...classes) ->
+  newState = @::rootClass.defineState.apply @::rootClass, classes
+  @addChild newState::name
+  newState
+  
+State.addChild = (name) ->
+  @::children = h.push @::children, name
 
 StateMachine = exports.StateMachine = Backbone.Model.extend4000(
   stateClass: State
-  
+  stateLength: 0  
   initialize: (options) ->
     # instantiate states
-    @states = h.dictMap (@states or {}), (state,name) ~> new state root: @
+    @stateN = {}
+    @states = h.dictMap (@states or {}), (state,name) ~>
+      stateInstance = new state root: @
+      @stateN[stateInstance.n] = stateInstance
+      return stateInstance
+      
+      
     # bind stuff
-    @on 'change:state', (model,state) ~> @state = state
+    @on 'change:state', (model,state) -> @state = state
+
     # this makes states link up between each other
     @set ready: true
     # initial state
@@ -65,17 +85,17 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000(
     ubi = require dontbrowserify
     ubi.visualize @states[stateName], ((node) -> node.getChildren()), ((node) -> node.name )
 )
+  
+  
+StateMachine.defineState = (...classes) ->
+  classes.push { rootClass: @ }
+  stateSubClass = @::stateClass.extend4000.apply @::stateClass, classes
 
-StateMachine.defineState = (name, stateClass or {}) ->
-  stateClass = @::stateClass.extend4000 stateClass, { name: name, rootClass: @ }
+  # get state number
+  stateLength = @::stateLength++
+  if not stateSubClass::n then stateSubClass::n = stateLength
+    
   if not @::states then @::states = {}
-  @::states[name] = stateClass
+  @::states[stateSubClass::name] = stateSubClass
 
-State.defineChild = (name, cls) ->
-  @addChild name
-  newState = @::rootClass.defineState name, cls
-  newState
-
-State.addChild = (name) ->
-  @::children = h.push @::children, name
 
