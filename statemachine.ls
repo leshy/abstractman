@@ -15,7 +15,7 @@ State = exports.State = graph.DirectedGraphNode.extend4000(
   initialize: (options) ->
     _.extend @, options
     
-    @root.when 'ready', ~>
+    @root.when '_sm_ready', ~>
       if @child then @_children = h.push @_children, @child
       _.map (@_children or []), ~> @addChild @root.states[it]
 
@@ -72,7 +72,7 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000(
     @on 'change:state', (model,state) -> @state = state
 
     # this makes states link up between each other
-    @set ready: true
+    @set _sm_ready: true
     # initial state
     if @start then @states[@start].visit()    
 
