@@ -17,7 +17,7 @@
     initialize: function(options){
       var this$ = this;
       _.extend(this, options);
-      return this.root.when('_sm_ready', function(){
+      return this.root.when('statemachine_ready', function(){
         if (this$.child) {
           this$._children = h.push(this$._children, this$.child);
         }
@@ -109,7 +109,7 @@
         return this.state = state;
       });
       this.set({
-        _sm_ready: true
+        statemachine_ready: true
       });
       if (this.start) {
         return this.states[this.start].visit();

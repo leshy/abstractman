@@ -17,8 +17,6 @@ metaPlug = (cls) ->
     options = _.extend { singular: name }, options
     
     cls::['push' + h.capitalize options.singular] = cls::['push' + h.capitalize name] = cls::['add' + h.capitalize options.singular] = cls::['add' + h.capitalize name] = (obj) -> @plugPush(name,obj)
-
-    
     cls::['pop' + h.capitalize options.singular] = (obj) -> @plugPop(name,obj)
     cls::['get' + h.capitalize name] = (obj) -> @plugGet(name)
     
@@ -40,7 +38,8 @@ GraphNode = exports.GraphNode = Backbone.Model.extend4000(
       @[name] = c
       c
     
-  plugPush: (plug,obj) -> @plugs[plug].push obj
+  plugPush: (plug,obj) ->
+    @plugs[plug].push obj
   plugPop: (plug) ->  @plugs[plug].pop()
   plugGet: (plug) ->  @plugs[plug].models
 )
