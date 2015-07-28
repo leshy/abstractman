@@ -11,26 +11,25 @@
       visited: false,
       active: false
     },
-    name: function(){
-      return this.get('name');
-    },
+    name: 'unnamed',
     initialize: function(options){
       var this$ = this;
       _.extend(this, options);
-      return this.root.when('statemachine_ready', function(){
+      return this.root.on('statemachine_ready', function(){
+        var ref$;
+        if (((ref$ = this$._children) != null ? ref$.constructor : void 8) === String) {
+          this$._children = [];
+        }
         if (this$.child) {
           this$._children = h.push(this$._children, this$.child);
         }
-        return _.map(this$._children || [], function(it){
-          return this$.addChild(this$.root.states[it]);
+        return _.map(this$._children || [], function(val, key){
+          if (key.constructor !== Number) {
+            val = key;
+          }
+          return this$.addChild(this$.root.states[val]);
         });
       });
-    },
-    active: function(){
-      this.set({
-        active: false
-      });
-      return this.trigger('leave');
     },
     leave: function(){
       this.set({
@@ -42,7 +41,6 @@
       if (this.get('active')) {
         return;
       }
-      console.log('state', this.name, 'is now active');
       this.set({
         visited: true,
         active: true
@@ -51,14 +49,14 @@
       this.root.set({
         state: this
       });
-      return this.root.trigger('changeState');
+      return this.root.trigger('changeState', this);
     },
     changeState: function(searchState){
       var newState;
       newState = (function(){
         switch (searchState != null && searchState.constructor) {
         case undefined:
-          throw new Error('was ist das');
+          throw new Error("trying to change to undefined state from state " + this.name);
         case Number:
           return this.children.find(function(state){
             return state.n === searchState;
@@ -67,15 +65,16 @@
           return this.children.find(function(state){
             return state.name === searchState;
           });
+        case Function:
+          return this.children.find(function(state){
+            return state === searchState;
+          });
+        default:
+          throw new Error("wrong state search term constructor at " + this.name + ", (" + it + ")");
         }
       }.call(this));
       if (!newState) {
-        newState = this.children.find(function(state){
-          return state === searchState;
-        });
-      }
-      if (!newState) {
-        throw new Error("state " + searchState + " not found in my children (" + this.name + ")");
+        throw new Error("state not found in my children (" + this.name + "), when using a search term " + searchState);
       }
       this.leave();
       return newState.visit();
@@ -99,29 +98,45 @@
       this.stateN = {};
       this.states = h.dictMap(this.states || {}, function(state, name){
         var stateInstance;
-        stateInstance = new state({
-          root: this$
-        });
-        this$.stateN[stateInstance.n] = stateInstance;
-        return stateInstance;
+        stateInstance = (function(){
+          switch (state.constructor) {
+          case Function:
+            return new state({
+              root: this
+            });
+          case Object:
+            return new (this.stateClass.extend4000({
+              name: name
+            }, state))({
+              root: this
+            });
+          default:
+            throw new Error("state constructor is wrong (" + it + ")");
+          }
+        }.call(this$));
+        return this$.stateN[stateInstance.n] = stateInstance;
       });
       this.on('change:state', function(model, state){
-        return this.state = state;
+        return _.defer(function(){
+          var f;
+          this$.state = state;
+          this$.trigger('state_' + state.name);
+          if (f = this$[state.name]) {
+            f.call(this$);
+          }
+          if (f = this$['state_' + state.name]) {
+            return f.call(this$);
+          }
+        });
       });
-      this.set({
-        statemachine_ready: true
-      });
-      if (this.start) {
-        return this.states[this.start].visit();
-      }
+      return this.trigger('statemachine_ready');
     },
     changeState: function(name){
-      console.log('root changestate', name);
-      return this.state.changeState(name);
+      return this.get('state').changeState(name);
     },
     ubigraph: function(stateName){
       var dontbrowserify, ubi;
-      stateName == null && (stateName = this.start);
+      stateName == null && (stateName = this.startState);
       dontbrowserify = 'ubigraph';
       ubi = require(dontbrowserify);
       return ubi.visualize(this.states[stateName], function(node){

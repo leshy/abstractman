@@ -3,14 +3,15 @@
 
 { map, fold1, keys, values, first, flatten } = require 'prelude-ls'
 
+
 require! {
   backbone4000: Backbone
   helpers: h
   underscore: _
 }
 
-metaPlug = (cls) ->
 
+metaPlug = (cls) ->
   makePlugFunctions = (options,name) ~>    
     if options@@ isnt Object then options = {}
       
