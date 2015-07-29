@@ -16,9 +16,12 @@
       var this$ = this;
       _.extend(this, options);
       return this.root.on('statemachine_ready', function(){
-        var ref$;
+        var ref$, ref1$;
         if (((ref$ = this$._children) != null ? ref$.constructor : void 8) === String) {
           this$._children = [];
+        }
+        if (((ref1$ = this$._children) != null ? ref1$.constructor : void 8) === Object) {
+          this$._children = _.keys(this$._children);
         }
         if (this$.child) {
           this$._children = h.push(this$._children, this$.child);
@@ -97,19 +100,25 @@
       var this$ = this;
       this.stateN = {};
       this.states = h.dictMap(this.states || {}, function(state, name){
-        var stateInstance;
+        var instantiate, stateInstance;
+        instantiate = function(params){
+          params == null && (params = {});
+          return new (this$.stateClass.extend4000({
+            name: name
+          }, params))({
+            root: this$
+          });
+        };
         stateInstance = (function(){
           switch (state.constructor) {
           case Function:
             return new state({
               root: this
             });
+          case Boolean:
+            return instantiate();
           case Object:
-            return new (this.stateClass.extend4000({
-              name: name
-            }, state))({
-              root: this
-            });
+            return instantiate(state);
           default:
             throw new Error("state constructor is wrong (" + it + ")");
           }

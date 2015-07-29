@@ -1,8 +1,6 @@
 #!/usr/bin/lsc
 # nocompile
 
-{ map, fold1, keys, values, first, flatten } = require 'prelude-ls'
-
 
 require! {
   backbone4000: Backbone
@@ -12,7 +10,7 @@ require! {
 
 
 metaPlug = (cls) ->
-  makePlugFunctions = (options,name) ~>    
+  makePlugFunctions = (options, name) ~>
     if options@@ isnt Object then options = {}
       
     options = _.extend { singular: name }, options

@@ -45,7 +45,7 @@ exports.stateMdefine = (test) ->
       state_a:
         child: 'state_b'
         
-      state_b: {}
+      state_b: true
 
   machine = new Machine()
   machine.states.state_a.visit()

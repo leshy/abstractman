@@ -16,6 +16,7 @@ State = exports.State = graph.DirectedGraphNode.extend4000(
     
     @root.on 'statemachine_ready', ~>
       if @_children?.constructor is String then @_children = []
+      if @_children?.constructor is Object then @_children = _.keys @_children
       if @child then @_children = h.push @_children, @child
         
       _.map (@_children or []), (val,key) ~>
@@ -63,9 +64,13 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
     @stateN = {}
     
     @states = h.dictMap (@states or {}), (state,name) ~>
+      instantiate = (params={}) ~>
+        new (@stateClass.extend4000({ name: name }, params)) root : @
+        
       stateInstance = switch state@@
         | Function => new state root: @
-        | Object => new (@stateClass.extend4000({ name: name }, state)) root : @
+        | Boolean => instantiate!
+        | Object => instantiate state
         default => throw new Error "state constructor is wrong (#{it})"
         
       @stateN[stateInstance.n] = stateInstance
