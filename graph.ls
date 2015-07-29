@@ -1,13 +1,8 @@
-#!/usr/bin/lsc
-# nocompile
-
-
 require! {
   backbone4000: Backbone
   helpers: h
   underscore: _
 }
-
 
 metaPlug = (cls) ->
   makePlugFunctions = (options, name) ~>

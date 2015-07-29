@@ -1,7 +1,5 @@
 #!/usr/bin/lsc
 
-{ map, fold1, keys, values, first, flatten } = require 'prelude-ls'
-
 require! {
   backbone4000: backbone
   helpers: h
