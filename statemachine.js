@@ -35,12 +35,16 @@
       });
     },
     leave: function(){
+      var message;
+      message = slice$.call(arguments);
       this.set({
         active: false
       });
-      return this.trigger('leave');
+      return this.trigger.apply(this, ['leave'].concat(message));
     },
     visit: function(){
+      var message, oldState;
+      message = slice$.call(arguments);
       if (this.get('active')) {
         return;
       }
@@ -48,14 +52,16 @@
         visited: true,
         active: true
       });
-      this.trigger('visit');
+      oldState = this.root.get('state');
       this.root.set({
         state: this
       });
-      return this.root.trigger('changeState', this);
+      this.trigger.apply(this, ['visit', oldState].concat(message));
+      return this.root.trigger.apply(this.root, ['changeState', this, oldState].concat(message));
     },
     changeState: function(searchState){
-      var newState;
+      var message, newState;
+      message = slice$.call(arguments, 1);
       newState = (function(){
         switch (searchState != null && searchState.constructor) {
         case undefined:
@@ -79,8 +85,9 @@
       if (!newState) {
         throw new Error("state not found in my children (" + this.name + "), when using a search term " + searchState);
       }
-      this.leave();
-      return newState.visit();
+      console.log('changestate mesage', message);
+      this.leave.apply(this, message);
+      return newState.visit.apply(newState, message);
     }
   });
   State.defineChild = function(){
@@ -134,6 +141,7 @@
             f.call(this$);
           }
           if (f = this$['state_' + state.name]) {
+            console.log("F", f);
             return f.call(this$);
           }
         });
@@ -141,11 +149,16 @@
       return this.trigger('statemachine_ready');
     },
     changeState: function(name){
-      return this.get('state').changeState(name);
+      var message, state;
+      message = slice$.call(arguments, 1);
+      state = this.get('state');
+      return state.changeState.apply(state, [name].concat(message));
     },
     ubigraph: function(stateName){
       var dontbrowserify, ubi;
-      stateName == null && (stateName = this.startState);
+      if (!stateName) {
+        stateName = _.first(_.keys(this.states));
+      }
       dontbrowserify = 'ubigraph';
       ubi = require(dontbrowserify);
       return ubi.visualize(this.states[stateName], function(node){
@@ -170,5 +183,12 @@
       this.prototype.states = {};
     }
     return this.prototype.states[stateSubClass.prototype.name] = stateSubClass;
+  };
+  StateMachine.defineStates = function(){
+    var states, this$ = this;
+    states = slice$.call(arguments);
+    return _.map(states, function(it){
+      return this$.defineState(it);
+    });
   };
 }).call(this);

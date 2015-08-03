@@ -23,18 +23,20 @@ State = exports.State = graph.DirectedGraphNode.extend4000(
         if key@@ isnt Number then val = key
         @addChild @root.states[val]
 
-  leave: ->
+  leave: (...message)->
     @set active: false
-    @trigger 'leave'
+    @trigger.apply @, [ 'leave' ].concat message
         
-  visit: ->
+  visit: (...message) ->
     if @get 'active' then return
     @set visited: true, active: true
-    @trigger 'visit'
+    oldState = @root.get 'state'
     @root.set state: @
-    @root.trigger 'changeState', @
+    
+    @trigger.apply @, [ 'visit', oldState ].concat message
+    @root.trigger.apply @root, [ 'changeState', @, oldState ].concat message
 
-  changeState: (searchState) ->
+  changeState: (searchState, ...message) ->
     newState = switch searchState?@@
       | undefined => throw new Error "trying to change to undefined state from state #{@name}"
       | Number => @children.find (state) -> state.n is searchState
@@ -43,8 +45,9 @@ State = exports.State = graph.DirectedGraphNode.extend4000(
       default throw new Error "wrong state search term constructor at #{@name}, (#{it})"
       
     if not newState then throw new Error "state not found in my children (#{@name}), when using a search term #{searchState}"
-      
-    @leave(); newState.visit()
+    console.log 'changestate mesage',message
+    @leave.apply @, message
+    newState.visit.apply newState, message
 )
 
 State.defineChild = (...classes) ->
@@ -82,23 +85,26 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
         @trigger 'state_' + state.name
 
         if f = @[state.name] then f.call @
-        if f = @['state_' + state.name] then f.call @
+        if f = @['state_' + state.name]
+          console.log "F",f
+          f.call @
 
 
     # this makes states link up between each other
     @trigger 'statemachine_ready'
     # initial state
-    #_.defer -> if @startState then @states[@startState].visit()
-    # 
-  changeState: (name) ->
-    @get('state').changeState name
+    #_.defer -> if @startState then @states[@startState].visit()  
+  changeState: (name, ...message) ->
+    state = @get('state')
+    state.changeState.apply state, [ name ].concat message
                   
-  ubigraph: (stateName=@startState) ->
+  ubigraph: (stateName) ->
+    if not stateName then stateName = _.first _.keys @states
     dontbrowserify = 'ubigraph'
     ubi = require dontbrowserify
     ubi.visualize @states[stateName], ((node) -> node.getChildren()), ((node) -> node.name )
   
-  
+
 StateMachine.defineState = (...classes) ->
   classes.push { rootClass: @ }
   stateSubClass = @::stateClass.extend4000.apply @::stateClass, classes
@@ -111,3 +117,5 @@ StateMachine.defineState = (...classes) ->
   @::states[stateSubClass::name] = stateSubClass
 
 
+StateMachine.defineStates = (...states) ->
+  _.map states, ~> @defineState it
