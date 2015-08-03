@@ -3,7 +3,7 @@ _ = require 'underscore'
 Backbone = require 'backbone4000'
 h = require 'helpers'
 
-State = exports.State = graph.DirectedGraphNode.extend4000(
+State = exports.State = graph.DirectedGraphNode.extend4000 do
   defaults:
     name: 'unnamed'
     visited: false
@@ -48,7 +48,7 @@ State = exports.State = graph.DirectedGraphNode.extend4000(
     console.log 'changestate mesage',message
     @leave.apply @, message
     newState.visit.apply newState, message
-)
+
 
 State.defineChild = (...classes) ->
   newState = @::rootClass.defineState.apply @::rootClass, classes
@@ -119,3 +119,4 @@ StateMachine.defineState = (...classes) ->
 
 StateMachine.defineStates = (...states) ->
   _.map states, ~> @defineState it
+
