@@ -7,18 +7,41 @@
   abstractMan = require('./index');
   ubigraph = require('ubigraph');
   exports.ubi = function(test){
-    var A, B, C, gameSM, tournamentSM, roundSM;
-    A = new abstractMan.DirectedGraphNode({
-      name: 'A'
+    var spawnerSM, gameSM, tournamentSM, roundSM;
+    spawnerSM = exports.spawnerSM = abstractMan.StateMachine.extend4000({
+      name: 'spawnerSM'
     });
-    B = new abstractMan.DirectedGraphNode({
-      name: 'B'
+    spawnerSM.defineStates({
+      name: 'init',
+      children: {
+        listen: true,
+        error: true
+      }
+    }, {
+      name: 'listen',
+      children: {
+        run: true,
+        error: true
+      }
+    }, {
+      name: 'run',
+      children: {
+        win: true,
+        draw: true,
+        error: true
+      }
+    }, {
+      name: 'win',
+      child: 'end'
+    }, {
+      name: 'draw',
+      child: 'end'
+    }, {
+      name: 'error',
+      child: 'end'
+    }, {
+      name: 'end'
     });
-    C = new abstractMan.DirectedGraphNode({
-      name: 'C'
-    });
-    A.pushChild(B);
-    B.pushChild(C);
     gameSM = exports.gameSM = abstractMan.StateMachine.extend4000({
       name: 'gameSM'
     });
@@ -94,9 +117,7 @@
     }, {
       name: 'end'
     });
-    new gameSM().ubigraph('wait');
-    new roundSM().ubigraph('query');
-    new tournamentSM().ubigraph('wait');
+    new spawnerSM().ubigraph('init');
     return test.done();
   };
   exports.stateMbasic = function(test){

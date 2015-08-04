@@ -1,4 +1,3 @@
-
 require! {
   backbone4000: Backbone
   helpers: h
@@ -8,12 +7,16 @@ require! {
 }
 
 exports.ubi = (test) ->
-  A = new abstractMan.DirectedGraphNode name: 'A'
-  B = new abstractMan.DirectedGraphNode name: 'B'
-  C = new abstractMan.DirectedGraphNode name: 'C'
-  
-  A.pushChild(B)
-  B.pushChild(C)
+
+  spawnerSM = exports.spawnerSM = abstractMan.StateMachine.extend4000 name: 'spawnerSM'
+  spawnerSM.defineStates do
+    { name: 'init', children: { +listen, +error } }
+    { name: 'listen', children: { +run, +error } }
+    { name: 'run', children: { +win, +draw, +error } }
+    { name: 'win', child: 'end' }
+    { name: 'draw', child: 'end' }
+    { name: 'error', child: 'end' }
+    { name: 'end', }
   
   gameSM = exports.gameSM = abstractMan.StateMachine.extend4000 name: 'gameSM'
   gameSM.defineStates do
@@ -59,11 +62,11 @@ exports.ubi = (test) ->
     { name: 'next' child: 'end' }
     { name: 'end' }
 
+  new spawnerSM().ubigraph('init')
 
-  new gameSM().ubigraph('wait')
-  new roundSM().ubigraph('query')
-  new tournamentSM().ubigraph('wait')
-
+#  new gameSM().ubigraph('wait')
+#  new roundSM().ubigraph('query')
+#  new tournamentSM().ubigraph('wait')
 
   test.done()
 

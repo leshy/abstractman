@@ -34,17 +34,13 @@
         });
       });
     },
-    leave: function(){
-      var message;
-      message = slice$.call(arguments);
+    leave: function(toState, event){
       this.set({
         active: false
       });
-      return this.trigger.apply(this, ['leave'].concat(message));
+      return this.trigger('leave', toState, event);
     },
-    visit: function(){
-      var message, oldState;
-      message = slice$.call(arguments);
+    visit: function(fromState, event){
       if (this.get('active')) {
         return;
       }
@@ -52,16 +48,14 @@
         visited: true,
         active: true
       });
-      oldState = this.root.get('state');
       this.root.set({
         state: this
       });
-      this.trigger.apply(this, ['visit', oldState].concat(message));
-      return this.root.trigger.apply(this.root, ['changeState', this, oldState].concat(message));
+      this.trigger('visit', fromState, event);
+      return this.root.trigger('changeState', this, fromState, event);
     },
-    changeState: function(searchState){
-      var message, newState;
-      message = slice$.call(arguments, 1);
+    changeState: function(searchState, event){
+      var newState;
       newState = (function(){
         switch (searchState != null && searchState.constructor) {
         case undefined:
@@ -83,11 +77,11 @@
         }
       }.call(this));
       if (!newState) {
-        throw new Error("state not found in my children (" + this.name + "), when using a search term " + searchState);
+        throw new Error("I am \"" + this.name + "\", state not found in my children when using a search term \"" + searchState + "\"");
       }
-      console.log('changestate mesage', message);
-      this.leave.apply(this, message);
-      return newState.visit.apply(newState, message);
+      console.log(this.root.name, 'changestate', this.name, '->', searchState, 'event:', event);
+      this.leave(newState, event);
+      return newState.visit(this, event);
     }
   });
   State.defineChild = function(){
@@ -132,27 +126,27 @@
         }.call(this$));
         return this$.stateN[stateInstance.n] = stateInstance;
       });
-      this.on('change:state', function(model, state){
-        return _.defer(function(){
-          var f;
-          this$.state = state;
-          this$.trigger('state_' + state.name);
-          if (f = this$[state.name]) {
-            f.call(this$);
-          }
-          if (f = this$['state_' + state.name]) {
-            console.log("F", f);
-            return f.call(this$);
-          }
-        });
+      this.on('changeState', function(toState, fromState, event){
+        var f;
+        this$.state = toState;
+        this$.trigger('state_' + toState.name, fromState, event);
+        if (f = this$[toState.name]) {
+          f.call(this$, fromState, event);
+        }
+        if (f = this$['state_' + toState.name]) {
+          return f.call(this$, fromState, event);
+        }
       });
       return this.trigger('statemachine_ready');
     },
-    changeState: function(name){
-      var message, state;
-      message = slice$.call(arguments, 1);
-      state = this.get('state');
-      return state.changeState.apply(state, [name].concat(message));
+    changeState: function(name, event){
+      var state, newState;
+      if (state = this.get('state')) {
+        return state.changeState(name, event);
+      } else {
+        newState = this.states[name];
+        return newState.visit(void 8, event);
+      }
     },
     ubigraph: function(stateName){
       var dontbrowserify, ubi;

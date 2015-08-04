@@ -3,6 +3,9 @@ _ = require 'underscore'
 Backbone = require 'backbone4000'
 h = require 'helpers'
 
+
+
+
 State = exports.State = graph.DirectedGraphNode.extend4000 do
   defaults:
     name: 'unnamed'
@@ -23,20 +26,18 @@ State = exports.State = graph.DirectedGraphNode.extend4000 do
         if key@@ isnt Number then val = key
         @addChild @root.states[val]
 
-  leave: (...message)->
+  leave: (toState, event)->
     @set active: false
-    @trigger.apply @, [ 'leave' ].concat message
+    @trigger 'leave', toState, event
         
-  visit: (...message) ->
+  visit: (fromState, event) ->
     if @get 'active' then return
     @set visited: true, active: true
-    oldState = @root.get 'state'
     @root.set state: @
-    
-    @trigger.apply @, [ 'visit', oldState ].concat message
-    @root.trigger.apply @root, [ 'changeState', @, oldState ].concat message
+    @trigger 'visit', fromState, event
+    @root.trigger 'changeState', @, fromState, event
 
-  changeState: (searchState, ...message) ->
+  changeState: ( searchState, event ) ->
     newState = switch searchState?@@
       | undefined => throw new Error "trying to change to undefined state from state #{@name}"
       | Number => @children.find (state) -> state.n is searchState
@@ -44,11 +45,11 @@ State = exports.State = graph.DirectedGraphNode.extend4000 do
       | Function => @children.find (state) -> state is searchState
       default throw new Error "wrong state search term constructor at #{@name}, (#{it})"
       
-    if not newState then throw new Error "state not found in my children (#{@name}), when using a search term #{searchState}"
-    console.log 'changestate mesage',message
-    @leave.apply @, message
-    newState.visit.apply newState, message
+    if not newState then throw new Error "I am \"#{@name}\", state not found in my children when using a search term \"#{searchState}\""
+    console.log @root.name, 'changestate', @name, '->', searchState, 'event:',event
 
+    @leave newState, event
+    newState.visit @, event
 
 State.defineChild = (...classes) ->
   newState = @::rootClass.defineState.apply @::rootClass, classes
@@ -57,6 +58,12 @@ State.defineChild = (...classes) ->
   
 State.addChild = (name) ->
   @::children = h.push @::children, name
+
+
+
+
+
+
 
 StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
   stateClass: State
@@ -79,25 +86,24 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
       @stateN[stateInstance.n] = stateInstance
             
     # bind stuff
-    @on 'change:state', (model,state) ~>
-      _.defer ~>
-        @state = state
-        @trigger 'state_' + state.name
+    @on 'changeState', (toState, fromState, event) ~>
+      @state = toState
+      @trigger 'state_' + toState.name, fromState, event
 
-        if f = @[state.name] then f.call @
-        if f = @['state_' + state.name]
-          console.log "F",f
-          f.call @
-
+      if f = @[toState.name] then f.call @, fromState, event
+      if f = @['state_' + toState.name] then f.call @, fromState, event
 
     # this makes states link up between each other
     @trigger 'statemachine_ready'
     # initial state
     #_.defer -> if @startState then @states[@startState].visit()  
-  changeState: (name, ...message) ->
-    state = @get('state')
-    state.changeState.apply state, [ name ].concat message
-                  
+  changeState: (name, event) ->
+    if state = @get('state')
+      state.changeState name, event
+    else
+      newState = @states[name]
+      newState.visit void, event
+      
   ubigraph: (stateName) ->
     if not stateName then stateName = _.first _.keys @states
     dontbrowserify = 'ubigraph'
@@ -119,4 +125,5 @@ StateMachine.defineState = (...classes) ->
 
 StateMachine.defineStates = (...states) ->
   _.map states, ~> @defineState it
+
 
