@@ -144,7 +144,9 @@
     stated.addChild('state_a');
     machine = new Machine();
     machine.states.state_a.visit();
-    machine.changeState('state_b');
+    machine.changeState('state_b', {
+      bla: 1
+    });
     return test.done();
   };
   exports.stateMdefine = function(test){
@@ -161,7 +163,9 @@
     });
     machine = new Machine();
     machine.states.state_a.visit();
-    machine.states.state_a.changeState('state_b');
+    machine.states.state_a.changeState('state_b', {
+      bla: 2
+    });
     return test.done();
   };
 }).call(this);

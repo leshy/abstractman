@@ -16,28 +16,27 @@ State = exports.State = graph.DirectedGraphNode.extend4000 do
   
   initialize: (options) ->
     _.extend @, options
-    
-    @root.on 'statemachine_ready', ~>
-      if @_children?.constructor is String then @_children = []
-      if @_children?.constructor is Object then @_children = _.keys @_children
-      if @child then @_children = h.push @_children, @child
+
+  connectChildren: -> 
+    if @_children?.constructor is String then @_children = []
+    if @_children?.constructor is Object then @_children = _.keys @_children
+    if @child then @_children = h.push @_children, @child
         
-      _.map (@_children or []), (val,key) ~>
-        if key@@ isnt Number then val = key
-        @addChild @root.states[val]
+    _.map (@_children or []), (val,key) ~>
+      if key@@ isnt Number then val = key
+      @addChild @root.states[val]
 
   leave: (toState, event)->
     @set active: false
     @trigger 'leave', toState, event
         
   visit: (fromState, event) ->
-    if @get 'active' then return
     @set visited: true, active: true
-    @root.set state: @
     @trigger 'visit', fromState, event
-    @root.trigger 'changeState', @, fromState, event
 
-  changeState: ( searchState, event ) ->
+  changeState: (...args) -> @root.changeState.apply @root, args
+
+  findChild: ( searchState ) ->
     newState = switch searchState?@@
       | undefined => throw new Error "trying to change to undefined state from state #{@name}"
       | Number => @children.find (state) -> state.n is searchState
@@ -46,11 +45,7 @@ State = exports.State = graph.DirectedGraphNode.extend4000 do
       default throw new Error "wrong state search term constructor at #{@name}, (#{it})"
       
     if not newState then throw new Error "I am \"#{@name}\", state not found in my children when using a search term \"#{searchState}\""
-    console.log @root.name, 'changestate', @name, '->', searchState, 'event:',event
-
-    @leave newState, event
-    newState.visit @, event
-
+    
 State.defineChild = (...classes) ->
   newState = @::rootClass.defineState.apply @::rootClass, classes
   @addChild newState::name
@@ -58,11 +53,6 @@ State.defineChild = (...classes) ->
   
 State.addChild = (name) ->
   @::children = h.push @::children, name
-
-
-
-
-
 
 
 StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
@@ -84,25 +74,26 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
         default => throw new Error "state constructor is wrong (#{it})"
         
       @stateN[stateInstance.n] = stateInstance
-            
-    # bind stuff
-    @on 'changeState', (toState, fromState, event) ~>
-      @state = toState
-      @trigger 'state_' + toState.name, fromState, event
-
-      if f = @[toState.name] then f.call @, fromState, event
-      if f = @['state_' + toState.name] then f.call @, fromState, event
 
     # this makes states link up between each other
-    @trigger 'statemachine_ready'
-    # initial state
-    #_.defer -> if @startState then @states[@startState].visit()  
-  changeState: (name, event) ->
-    if state = @get('state')
-      state.changeState name, event
-    else
-      newState = @states[name]
-      newState.visit void, event
+    _.map @states, (state, name) -> state.connectChildren()
+    if @startState then @changeState @startState
+  
+  changeState: (toState, event) ->
+    if fromState = @get('state') then toState = fromState.findChild(toState); fromState.leave()
+    else toState = @states[toState]
+    
+    console.log @name, 'changestate', fromState?name, '->', toState.name, 'event:',event
+
+    toState.visit fromState, event
+    
+    @set state: @state = toState
+    @trigger 'state_' + toState.name, fromState, event
+    
+    if f = @[toState.name] then f.call @, fromState, event
+    if f = @['state_' + toState.name] then f.call @, fromState, event
+
+    @trigger 'changeState', toState, fromState, event
       
   ubigraph: (stateName) ->
     if not stateName then stateName = _.first _.keys @states

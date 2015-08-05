@@ -13,25 +13,24 @@
     },
     name: 'unnamed',
     initialize: function(options){
-      var this$ = this;
-      _.extend(this, options);
-      return this.root.on('statemachine_ready', function(){
-        var ref$, ref1$;
-        if (((ref$ = this$._children) != null ? ref$.constructor : void 8) === String) {
-          this$._children = [];
+      return _.extend(this, options);
+    },
+    connectChildren: function(){
+      var ref$, ref1$, this$ = this;
+      if (((ref$ = this._children) != null ? ref$.constructor : void 8) === String) {
+        this._children = [];
+      }
+      if (((ref1$ = this._children) != null ? ref1$.constructor : void 8) === Object) {
+        this._children = _.keys(this._children);
+      }
+      if (this.child) {
+        this._children = h.push(this._children, this.child);
+      }
+      return _.map(this._children || [], function(val, key){
+        if (key.constructor !== Number) {
+          val = key;
         }
-        if (((ref1$ = this$._children) != null ? ref1$.constructor : void 8) === Object) {
-          this$._children = _.keys(this$._children);
-        }
-        if (this$.child) {
-          this$._children = h.push(this$._children, this$.child);
-        }
-        return _.map(this$._children || [], function(val, key){
-          if (key.constructor !== Number) {
-            val = key;
-          }
-          return this$.addChild(this$.root.states[val]);
-        });
+        return this$.addChild(this$.root.states[val]);
       });
     },
     leave: function(toState, event){
@@ -41,20 +40,18 @@
       return this.trigger('leave', toState, event);
     },
     visit: function(fromState, event){
-      if (this.get('active')) {
-        return;
-      }
       this.set({
         visited: true,
         active: true
       });
-      this.root.set({
-        state: this
-      });
-      this.trigger('visit', fromState, event);
-      return this.root.trigger('changeState', this, fromState, event);
+      return this.trigger('visit', fromState, event);
     },
-    changeState: function(searchState, event){
+    changeState: function(){
+      var args;
+      args = slice$.call(arguments);
+      return this.root.changeState.apply(this.root, args);
+    },
+    findChild: function(searchState){
       var newState;
       newState = (function(){
         switch (searchState != null && searchState.constructor) {
@@ -79,9 +76,6 @@
       if (!newState) {
         throw new Error("I am \"" + this.name + "\", state not found in my children when using a search term \"" + searchState + "\"");
       }
-      console.log(this.root.name, 'changestate', this.name, '->', searchState, 'event:', event);
-      this.leave(newState, event);
-      return newState.visit(this, event);
     }
   });
   State.defineChild = function(){
@@ -126,27 +120,34 @@
         }.call(this$));
         return this$.stateN[stateInstance.n] = stateInstance;
       });
-      this.on('changeState', function(toState, fromState, event){
-        var f;
-        this$.state = toState;
-        this$.trigger('state_' + toState.name, fromState, event);
-        if (f = this$[toState.name]) {
-          f.call(this$, fromState, event);
-        }
-        if (f = this$['state_' + toState.name]) {
-          return f.call(this$, fromState, event);
-        }
+      _.map(this.states, function(state, name){
+        return state.connectChildren();
       });
-      return this.trigger('statemachine_ready');
-    },
-    changeState: function(name, event){
-      var state, newState;
-      if (state = this.get('state')) {
-        return state.changeState(name, event);
-      } else {
-        newState = this.states[name];
-        return newState.visit(void 8, event);
+      if (this.startState) {
+        return this.changeState(this.startState);
       }
+    },
+    changeState: function(toState, event){
+      var fromState, f;
+      if (fromState = this.get('state')) {
+        toState = fromState.findChild(toState);
+        fromState.leave();
+      } else {
+        toState = this.states[toState];
+      }
+      console.log(this.name, 'changestate', fromState != null ? fromState.name : void 8, '->', toState.name, 'event:', event);
+      toState.visit(fromState, event);
+      this.set({
+        state: this.state = toState
+      });
+      this.trigger('state_' + toState.name, fromState, event);
+      if (f = this[toState.name]) {
+        f.call(this, fromState, event);
+      }
+      if (f = this['state_' + toState.name]) {
+        f.call(this, fromState, event);
+      }
+      return this.trigger('changeState', toState, fromState, event);
     },
     ubigraph: function(stateName){
       var dontbrowserify, ubi;
