@@ -2,7 +2,7 @@ graph = require './graph'
 _ = require 'underscore'
 Backbone = require 'backbone4000'
 h = require 'helpers'
-
+colors = require 'colors'
 
 
 
@@ -45,6 +45,7 @@ State = exports.State = graph.DirectedGraphNode.extend4000 do
       default throw new Error "wrong state search term constructor at #{@name}, (#{it})"
       
     if not newState then throw new Error "I am \"#{@name}\", state not found in my children when using a search term \"#{searchState}\""
+    newState
     
 State.defineChild = (...classes) ->
   newState = @::rootClass.defineState.apply @::rootClass, classes
@@ -53,6 +54,7 @@ State.defineChild = (...classes) ->
   
 State.addChild = (name) ->
   @::children = h.push @::children, name
+
 
 
 StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
@@ -79,21 +81,25 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
     _.map @states, (state, name) -> state.connectChildren()
     if @startState then @changeState @startState
   
-  changeState: (toState, event) ->
-    if fromState = @get('state') then toState = fromState.findChild(toState); fromState.leave()
-    else toState = @states[toState]
-    
-    console.log @name, 'changestate', fromState?name, '->', toState.name, 'event:',event
+  changeState: (toStateName, event) ->
+    _.defer ~> 
+      if fromState = @state
+        toState = fromState.findChild(toStateName); fromState.leave()
+      else
+        toState = @states[toStateName]
+        if not toState then throw new Error "#{@name} can't find initial state \"#{toStateName}\""
 
-    toState.visit fromState, event
-    
-    @set state: @state = toState
-    @trigger 'state_' + toState.name, fromState, event
-    
-    if f = @[toState.name] then f.call @, fromState, event
-    if f = @['state_' + toState.name] then f.call @, fromState, event
+      console.log @name, colors.green('changestate'), fromState?name, '->', toState.name, 'event:',event
 
-    @trigger 'changeState', toState, fromState, event
+      @set state: @state = toState    
+      toState.visit fromState, event
+
+      if f = @[toState.name] then f.call @, fromState, event
+      if f = @['state_' + toState.name] then f.call @, fromState, event
+
+      @trigger 'changeState', toState, fromState, event
+      @trigger 'state_' + toState.name, fromState, event
+    
       
   ubigraph: (stateName) ->
     if not stateName then stateName = _.first _.keys @states
