@@ -5,7 +5,6 @@ h = require 'helpers'
 colors = require 'colors'
 
 
-
 State = exports.State = graph.DirectedGraphNode.extend4000 do
   defaults:
     name: 'unnamed'
@@ -39,7 +38,6 @@ State = exports.State = graph.DirectedGraphNode.extend4000 do
   findChild: ( searchState ) ->
     newState = switch searchState?@@
       | undefined => throw new Error "trying to change to undefined state from state #{@name}"
-      | Number => @children.find (state) -> state.n is searchState
       | String => @children.find (state) -> state.name is searchState
       | Function => @children.find (state) -> state is searchState
       default throw new Error "wrong state search term constructor at #{@name}, (#{it})"
@@ -56,15 +54,20 @@ State.addChild = (name) ->
   @::children = h.push @::children, name
 
 
-
 StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
   stateClass: State
-  stateLength: 0
   
   initialize: (options) ->
+    gotState = (stateName) ~> 
+      if not @endStates then @wakeup stateName
+      else if stateName not in @endStates then @wakeup stateName
+      @on 'change:state', (self, stateName) ~> @changeState stateName
+      
+    if stateName = @get 'state' then gotState stateName
+    else @once 'change:state', (self, stateName) ~> gotState stateName
+
+  wakeup: (stateName) ->
     # instantiate states
-    @stateN = {}
-    
     @states = h.dictMap (@states or {}), (state,name) ~>
       instantiate = (params={}) ~>
         new (@stateClass.extend4000({ name: name }, params)) root : @
@@ -73,33 +76,36 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
         | Function => new state root: @
         | Boolean => instantiate!
         | Object => instantiate state
-        default => throw new Error "state constructor is wrong (#{it})"
+        default => throw new Error "state constructor is wrong (#{it?})"
         
-      @stateN[stateInstance.n] = stateInstance
-
-    # this makes states link up between each other
+      # this makes states link up between each other
     _.map @states, (state, name) -> state.connectChildren()
-    if @startState then @changeState @startState
-  
+    @changeState stateName
+
+  sleep: -> false
+    
   changeState: (toStateName, event) ->
-    _.defer ~> 
-      if fromState = @state
-        toState = fromState.findChild(toStateName); fromState.leave()
-      else
-        toState = @states[toStateName]
-        if not toState then throw new Error "#{@name} can't find initial state \"#{toStateName}\""
+    if fromState = @state
+      toState = fromState.findChild(toStateName); fromState.leave()
+    else
+      toState = @states[toStateName]
+      if not toState then throw new Error "#{@name} can't find initial state \"#{toStateName}\""
 
-      console.log @name, colors.green('changestate'), fromState?name, '->', toState.name, 'event:',event
+    console.log @name, colors.green('changestate'), fromState?name, '->', toState.name, 'event:',event
 
-      @set state: @state = toState    
-      toState.visit fromState, event
-
+    @set { state: toState.name } silent: true
+    @state = toState
+    
+    toState.visit fromState, event
+    
+    _.defer ~>
       if f = @[toState.name] then f.call @, fromState, event
       if f = @['state_' + toState.name] then f.call @, fromState, event
 
-      @trigger 'changeState', toState, fromState, event
+      @trigger 'changestate', toState.name, fromState, event
+      @trigger 'changestate:', toState.name, fromState, event
       @trigger 'state_' + toState.name, fromState, event
-    
+
       
   ubigraph: (stateName) ->
     if not stateName then stateName = _.first _.keys @states
@@ -112,10 +118,6 @@ StateMachine.defineState = (...classes) ->
   classes.push { rootClass: @ }
   stateSubClass = @::stateClass.extend4000.apply @::stateClass, classes
 
-  # get state number
-  stateLength = @::stateLength++
-  if not stateSubClass::n then stateSubClass::n = stateLength
-    
   if not @::states then @::states = {}
   @::states[stateSubClass::name] = stateSubClass
 

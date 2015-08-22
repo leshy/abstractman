@@ -58,10 +58,6 @@
         switch (searchState != null && searchState.constructor) {
         case undefined:
           throw new Error("trying to change to undefined state from state " + this.name);
-        case Number:
-          return this.children.find(function(state){
-            return state.n === searchState;
-          });
         case String:
           return this.children.find(function(state){
             return state.name === searchState;
@@ -92,10 +88,28 @@
   };
   StateMachine = exports.StateMachine = Backbone.Model.extend4000({
     stateClass: State,
-    stateLength: 0,
     initialize: function(options){
+      var gotState, stateName, this$ = this;
+      gotState = function(stateName){
+        if (!this$.endStates) {
+          this$.wakeup(stateName);
+        } else if (!in$(stateName, this$.endStates)) {
+          this$.wakeup(stateName);
+        }
+        return this$.on('change:state', function(self, stateName){
+          return this$.changeState(stateName);
+        });
+      };
+      if (stateName = this.get('state')) {
+        return gotState(stateName);
+      } else {
+        return this.once('change:state', function(self, stateName){
+          return gotState(stateName);
+        });
+      }
+    },
+    wakeup: function(stateName){
       var this$ = this;
-      this.stateN = {};
       this.states = h.dictMap(this.states || {}, function(state, name){
         var instantiate, stateInstance;
         instantiate = function(params){
@@ -106,7 +120,7 @@
             root: this$
           });
         };
-        stateInstance = (function(){
+        return stateInstance = (function(){
           switch (state.constructor) {
           case Function:
             return new state({
@@ -117,43 +131,47 @@
           case Object:
             return instantiate(state);
           default:
-            throw new Error("state constructor is wrong (" + it + ")");
+            throw new Error("state constructor is wrong (" + (typeof it != 'undefined' && it !== null) + ")");
           }
         }.call(this$));
-        return this$.stateN[stateInstance.n] = stateInstance;
       });
       _.map(this.states, function(state, name){
         return state.connectChildren();
       });
-      if (this.startState) {
-        return this.changeState(this.startState);
-      }
+      return this.changeState(stateName);
+    },
+    sleep: function(){
+      return false;
     },
     changeState: function(toStateName, event){
-      var this$ = this;
-      return _.defer(function(){
-        var fromState, toState, f;
-        if (fromState = this$.state) {
-          toState = fromState.findChild(toStateName);
-          fromState.leave();
-        } else {
-          toState = this$.states[toStateName];
-          if (!toState) {
-            throw new Error(this$.name + " can't find initial state \"" + toStateName + "\"");
-          }
+      var fromState, toState, this$ = this;
+      if (fromState = this.state) {
+        toState = fromState.findChild(toStateName);
+        fromState.leave();
+      } else {
+        toState = this.states[toStateName];
+        if (!toState) {
+          throw new Error(this.name + " can't find initial state \"" + toStateName + "\"");
         }
-        console.log(this$.name, colors.green('changestate'), fromState != null ? fromState.name : void 8, '->', toState.name, 'event:', event);
-        this$.set({
-          state: this$.state = toState
-        });
-        toState.visit(fromState, event);
+      }
+      console.log(this.name, colors.green('changestate'), fromState != null ? fromState.name : void 8, '->', toState.name, 'event:', event);
+      this.set({
+        state: toState.name
+      }, {
+        silent: true
+      });
+      this.state = toState;
+      toState.visit(fromState, event);
+      return _.defer(function(){
+        var f;
         if (f = this$[toState.name]) {
           f.call(this$, fromState, event);
         }
         if (f = this$['state_' + toState.name]) {
           f.call(this$, fromState, event);
         }
-        this$.trigger('changeState', toState, fromState, event);
+        this$.trigger('changestate', toState.name, fromState, event);
+        this$.trigger('changestate:', toState.name, fromState, event);
         return this$.trigger('state_' + toState.name, fromState, event);
       });
     },
@@ -172,16 +190,12 @@
     }
   });
   StateMachine.defineState = function(){
-    var classes, stateSubClass, stateLength;
+    var classes, stateSubClass;
     classes = slice$.call(arguments);
     classes.push({
       rootClass: this
     });
     stateSubClass = this.prototype.stateClass.extend4000.apply(this.prototype.stateClass, classes);
-    stateLength = this.prototype.stateLength++;
-    if (!stateSubClass.prototype.n) {
-      stateSubClass.prototype.n = stateLength;
-    }
     if (!this.prototype.states) {
       this.prototype.states = {};
     }
@@ -194,4 +208,9 @@
       return this$.defineState(it);
     });
   };
+  function in$(x, xs){
+    var i = -1, l = xs.length >>> 0;
+    while (++i < l) if (x === xs[i]) return true;
+    return false;
+  }
 }).call(this);

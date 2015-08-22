@@ -124,7 +124,9 @@
     var Machine, statea, stated, machine;
     Machine = abstractMan.StateMachine.extend4000({
       name: 'test machine',
-      start: 'state_a'
+      defaults: {
+        state: 'state_a'
+      }
     });
     statea = Machine.defineState({
       name: 'state_a',
@@ -143,17 +145,50 @@
     });
     stated.addChild('state_a');
     machine = new Machine();
-    machine.states.state_a.visit();
     machine.changeState('state_b', {
       bla: 1
     });
+    return test.done();
+  };
+  exports.stateMchange = function(test){
+    var Machine, statea, stated, machine;
+    Machine = abstractMan.StateMachine.extend4000({
+      name: 'test machine',
+      defaults: {
+        state: 'state_a'
+      }
+    });
+    statea = Machine.defineState({
+      name: 'state_a',
+      children: ['state_b']
+    });
+    Machine.defineState({
+      name: 'state_b',
+      children: ['state_c']
+    });
+    Machine.defineState({
+      name: 'state_c',
+      children: ['state_a']
+    });
+    stated = statea.defineChild({
+      name: 'state_d'
+    });
+    stated.addChild('state_a');
+    machine = new Machine();
+    console.log('will set state');
+    machine.set({
+      state: 'state_b'
+    });
+    console.log(machine.state.name);
     return test.done();
   };
   exports.stateMdefine = function(test){
     var Machine, machine;
     Machine = abstractMan.StateMachine.extend4000({
       name: 'test machine',
-      start: 'state_a',
+      defaults: {
+        state: 'state_a'
+      },
       states: {
         state_a: {
           child: 'state_b'
