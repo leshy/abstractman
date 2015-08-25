@@ -11,7 +11,9 @@ exports.basic = (test) ->
   
   SM = abstractman.StateMachine.extend4000 do
     state: 'init'
+    
     states:
+    
       init:
         children: { +A, +B }
         visit: ->
@@ -19,6 +21,7 @@ exports.basic = (test) ->
           @changeState 'A'
         leave: ->
           data.initLeave = true
+        
       A:
         children: { +B }
         visit: ->
@@ -26,6 +29,7 @@ exports.basic = (test) ->
           @changeState 'B'
         leave: ->
           data.Aleave = true
+          
       B:
         visit: ->
           test.deepEqual data, { initVisit: true, initLeave: true, Avisit: true, Aleave: true }

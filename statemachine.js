@@ -38,6 +38,12 @@
       }
       instantiate = function(def){
         def == null && (def = {});
+        if (def.child) {
+          def.children = {
+            child: true
+          };
+          delete def.child;
+        }
         return new this$.stateClass(_.extend({
           name: name,
           root: this$

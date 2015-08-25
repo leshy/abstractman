@@ -27,6 +27,10 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
     if not stateDef then throw "state definition for #{name} not found"
       
     instantiate = (def={}) ~>
+      if def.child
+        def.children = { child: true }
+        delete def.child
+        
       new @stateClass _.extend {name: name,  root : @}, def
 
     stateInstance = switch stateDef@@
