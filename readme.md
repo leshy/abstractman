@@ -4,7 +4,7 @@ heavy metaclass use from [backbone4000](https://github.com/leshy/backbone4000)
 
 - graph objects (directed/bidirectional, graph nodes belonging to multiple graph networks (see "plugs" in [graph.ls](https://github.com/leshy/abstractman/blob/master/graph.ls)) )
 - simple (fast) finite state machines
-- advanced dynamic finite state machines on top of graph objects
+- advanced dynamic (not so finite) state machines on top of graph objects
  
 for now, see [tests](https://github.com/leshy/abstractman/blob/master/tests.ls) for documentation.
 
