@@ -21,14 +21,16 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
   
   getState: (name) ->
     if stateInstance = @_states[name] then return stateInstance
-      
+    
     stateDef = @states[name]
-
+    
     if not stateDef then throw "state definition for #{name} not found"
-      
+    
     instantiate = (def={}) ~>
+      # just a syntax sugar
       if def.child
-        def.children = { child: true }
+        def.children = { }
+        def.children[def.child] = true
         delete def.child
         
       new @stateClass _.extend {name: name,  root : @}, def
@@ -46,8 +48,6 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
       if prevStateName = @state
         prevState = @getState prevStateName
         if not prevState.children?[newStateName]
-          console.log "invalid state change #{prevStateName} -> #{newStateName}"
-          
           throw new Error "invalid state change #{prevStateName} -> #{newStateName}"
         if prevState.leave then prevState.leave newStateName, event
 
@@ -56,7 +56,6 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
 
   runTriggers: (prevStateName, newStateName, event) ->
     _.defer ~> 
-
       newState = @getState newStateName
       @state = newStateName
 

@@ -39,9 +39,8 @@
       instantiate = function(def){
         def == null && (def = {});
         if (def.child) {
-          def.children = {
-            child: true
-          };
+          def.children = {};
+          def.children[def.child] = true;
           delete def.child;
         }
         return new this$.stateClass(_.extend({
@@ -72,7 +71,6 @@
         if (prevStateName = this$.state) {
           prevState = this$.getState(prevStateName);
           if (!((ref$ = prevState.children) != null && ref$[newStateName])) {
-            console.log("invalid state change " + prevStateName + " -> " + newStateName);
             throw new Error("invalid state change " + prevStateName + " -> " + newStateName);
           }
           if (prevState.leave) {

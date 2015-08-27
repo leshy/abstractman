@@ -141,3 +141,6 @@ State.defineChild = (...classes) ->
   
 State.addChild = (name) ->
   @::children = h.push @::children, name
+
+  
+
