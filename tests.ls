@@ -36,9 +36,10 @@ exports.basic = (test) ->
           test.deepEqual data, { initVisit: true, initLeave: true, Avisit: true, Aleave: true }
           test.done()
           
-  sm = new SM()
+  sm = new SM()  
+  sm.on 'changestate', (newStateName, oldStateName, event) ->
+    console.log 'changestate', oldStateName, '->', newStateName, (event or "")
   
-  sm.on 'changestate', (newStateName, oldStateName) -> console.log 'changestate', oldStateName, '->' newStateName
       
 
 exports.promise = (test) ->
@@ -78,4 +79,5 @@ exports.promise = (test) ->
       test.done()
     
   sm = new SM()
-  sm.on 'changestate', (newStateName, oldStateName) -> console.log 'changestate', oldStateName, '->' newStateName
+  sm.on 'changestate', (newStateName, oldStateName, event) ->
+    console.log 'changestate', oldStateName, '->', newStateName, (event or "")

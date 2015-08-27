@@ -52,8 +52,8 @@
       }
     });
     sm = new SM();
-    return sm.on('changestate', function(newStateName, oldStateName){
-      return console.log('changestate', oldStateName, '->', newStateName);
+    return sm.on('changestate', function(newStateName, oldStateName, event){
+      return console.log('changestate', oldStateName, '->', newStateName, event || "");
     });
   };
   exports.promise = function(test){
@@ -116,8 +116,8 @@
       }
     });
     sm = new SM();
-    return sm.on('changestate', function(newStateName, oldStateName){
-      return console.log('changestate', oldStateName, '->', newStateName);
+    return sm.on('changestate', function(newStateName, oldStateName, event){
+      return console.log('changestate', oldStateName, '->', newStateName, event || "");
     });
   };
 }).call(this);

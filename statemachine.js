@@ -68,7 +68,6 @@
       var this$ = this;
       return _.defer(function(){
         var prevStateName, prevState, ref$;
-        console.log('changestate', newStateName);
         if (prevStateName = this$.state) {
           prevState = this$.getState(prevStateName);
           if (!((ref$ = prevState.children) != null && ref$[newStateName])) {

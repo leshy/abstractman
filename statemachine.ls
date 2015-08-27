@@ -45,7 +45,6 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
     
   changeState: (newStateName, event) ->
     _.defer ~> 
-      console.log 'changestate',newStateName
       if prevStateName = @state
         prevState = @getState prevStateName
         if not prevState.children?[newStateName]
