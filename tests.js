@@ -120,4 +120,87 @@
       return console.log('changestate', oldStateName, '->', newStateName, event || "");
     });
   };
+  exports.stateMbasic = function(test){
+    var Machine, statea, stated, machine;
+    Machine = abstractman.GraphStateMachine.extend4000({
+      name: 'test machine',
+      defaults: {
+        state: 'state_a'
+      }
+    });
+    statea = Machine.defineState({
+      name: 'state_a',
+      children: ['state_b']
+    });
+    Machine.defineState({
+      name: 'state_b',
+      children: ['state_c']
+    });
+    Machine.defineState({
+      name: 'state_c',
+      children: ['state_a']
+    });
+    stated = statea.defineChild({
+      name: 'state_d'
+    });
+    stated.addChild('state_a');
+    machine = new Machine();
+    machine.changeState('state_b', {
+      bla: 1
+    });
+    return test.done();
+  };
+  exports.stateMchange = function(test){
+    var Machine, statea, stated, machine;
+    Machine = abstractman.GraphStateMachine.extend4000({
+      name: 'test machine',
+      defaults: {
+        state: 'state_a'
+      }
+    });
+    statea = Machine.defineState({
+      name: 'state_a',
+      children: ['state_b']
+    });
+    Machine.defineState({
+      name: 'state_b',
+      children: ['state_c']
+    });
+    Machine.defineState({
+      name: 'state_c',
+      children: ['state_a']
+    });
+    stated = statea.defineChild({
+      name: 'state_d'
+    });
+    stated.addChild('state_a');
+    machine = new Machine();
+    console.log('will set state');
+    machine.set({
+      state: 'state_b'
+    });
+    console.log(machine.state.name);
+    return test.done();
+  };
+  exports.stateMdefine = function(test){
+    var Machine, machine;
+    Machine = abstractman.GraphStateMachine.extend4000({
+      name: 'test machine',
+      defaults: {
+        state: 'state_a'
+      },
+      states: {
+        state_a: {
+          child: 'state_b'
+        },
+        state_b: true
+      }
+    });
+    machine = new Machine();
+    machine.states.state_a.visit();
+    machine.states.state_a.changeState('state_b', {
+      bla: 2
+    });
+    return test.done();
+  };
 }).call(this);

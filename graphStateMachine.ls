@@ -2,14 +2,64 @@ require! {
   underscore: _
   helpers: h
   backbone4000: Backbone
-  
-  colors: colors
-  
+  colors: colors  
   './graph': graph    
 }
 
+State = exports.State = graph.DirectedGraphNode.extend4000 do
+  defaults:
+    name: 'unnamed'
+    visited: false
+    active: false
 
-StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
+  name: 'unnamed'
+  
+  initialize: (options) ->
+    _.extend @, options
+
+  connectChildren: -> 
+    if @_children?.constructor is String then @_children = []
+    if @_children?.constructor is Object then @_children = _.keys @_children
+    if @child then @_children = h.push @_children, @child
+        
+    _.map (@_children or []), (val,key) ~>
+      if key@@ isnt Number then val = key
+      @addChild @root.states[val]
+
+  leave: (toState, event) ->
+    @set active: false
+    @trigger 'leave', toState, event
+        
+  visit: (fromState, event) ->
+    @set visited: true, active: true
+    @trigger 'visit', fromState, event
+
+  changeState: (...args) -> @root.changeState.apply @root, args
+
+  findChild: ( searchState ) ->
+    newState = switch searchState?@@
+      | undefined => throw new Error "trying to change to undefined state from state #{@name}"
+      | String => @children.find (state) -> state.name is searchState
+      | Function => @children.find (state) -> state is searchState
+      default throw new Error "wrong state search term constructor at #{@name}, (#{it})"
+      
+    if not newState then throw new Error "I am \"#{@name}\", state not found in my children when using a search term \"#{searchState}\""
+    newState
+    
+State.defineChild = (...classes) ->
+  newState = @::rootClass.defineState.apply @::rootClass, classes
+  @addChild newState::name
+  newState
+  
+State.addChild = (name) ->
+  @::children = h.push @::children, name
+
+  
+
+
+
+
+GraphStateMachine = exports.GraphStateMachine = Backbone.Model.extend4000 do
   stateClass: State
   
   initialize: (options) ->
@@ -74,73 +124,18 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
     ubi = require dontbrowserify
     ubi.visualize @states[stateName], ((node) -> node.getChildren()), ((node) -> node.name )
   
-StateMachine.mergers.push Backbone.metaMerger.chainF 'initialize_'
+GraphStateMachine.mergers.push Backbone.metaMerger.chainF 'initialize_'
 
-StateMachine.defineState = (...classes) ->
+GraphStateMachine.defineState = (...classes) ->
   classes.push { rootClass: @ }
   stateSubClass = @::stateClass.extend4000.apply @::stateClass, classes
 
   if not @::states then @::states = {}
   @::states[stateSubClass::name] = stateSubClass
 
-StateMachine.defineStates = (...states) ->
+GraphStateMachine.defineStates = (...states) ->
   _.map states, ~> @defineState it
 
 
 
-
-
-
-
-
-
-State = exports.State = graph.DirectedGraphNode.extend4000 do
-  defaults:
-    name: 'unnamed'
-    visited: false
-    active: false
-
-  name: 'unnamed'
-  
-  initialize: (options) ->
-    _.extend @, options
-
-  connectChildren: -> 
-    if @_children?.constructor is String then @_children = []
-    if @_children?.constructor is Object then @_children = _.keys @_children
-    if @child then @_children = h.push @_children, @child
-        
-    _.map (@_children or []), (val,key) ~>
-      if key@@ isnt Number then val = key
-      @addChild @root.states[val]
-
-  leave: (toState, event) ->
-    @set active: false
-    @trigger 'leave', toState, event
-        
-  visit: (fromState, event) ->
-    @set visited: true, active: true
-    @trigger 'visit', fromState, event
-
-  changeState: (...args) -> @root.changeState.apply @root, args
-
-  findChild: ( searchState ) ->
-    newState = switch searchState?@@
-      | undefined => throw new Error "trying to change to undefined state from state #{@name}"
-      | String => @children.find (state) -> state.name is searchState
-      | Function => @children.find (state) -> state is searchState
-      default throw new Error "wrong state search term constructor at #{@name}, (#{it})"
-      
-    if not newState then throw new Error "I am \"#{@name}\", state not found in my children when using a search term \"#{searchState}\""
-    newState
-    
-State.defineChild = (...classes) ->
-  newState = @::rootClass.defineState.apply @::rootClass, classes
-  @addChild newState::name
-  newState
-  
-State.addChild = (name) ->
-  @::children = h.push @::children, name
-
-  
 

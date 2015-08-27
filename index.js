@@ -6,4 +6,5 @@
   _ = require('underscore');
   _.extend(exports, require('./graph'));
   _.extend(exports, require('./statemachine'));
+  _.extend(exports, require('./graphStateMachine'));
 }).call(this);
