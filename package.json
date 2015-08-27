@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "backbone4000": "git://github.com/leshy/backbone4000.git",
+    "bluebird": "^2.9.34",
     "helpers": "git://github.com/leshy/nodejs-helpers.git"
   },
   "author": "lesh",

@@ -51,17 +51,33 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
           throw new Error "invalid state change #{prevStateName} -> #{newStateName}"
         if prevState.leave then prevState.leave newStateName, event
 
-      @runTriggers prevStateName, newStateName, event
+        _.defer ~> @runTriggers prevStateName, newStateName, event
 
 
+  runTriggers: (prevStateName, newStateName, event) ->     
+    newState = @getState newStateName
+    @state = newStateName
+
+    @trigger 'changestate', newStateName, prevStateName, event
+    if newState.visit then newState.visit prevStateName, event
+    if f = @['state_' + newStateName] then f.call @, prevStateName, event
+
+
+PromiseStateMachine = exports.PromiseStateMachine = StateMachine.extend4000 do
   runTriggers: (prevStateName, newStateName, event) ->
-    _.defer ~> 
-      newState = @getState newStateName
-      @state = newStateName
+    newState = @getState newStateName
+    @state = newStateName
+    @trigger 'changestate', newStateName, prevStateName, event
+    if newState.visit then newState.visit prevStateName, event
+    if f = @['state_' + newStateName] then
+      promise = f.call @, prevStateName, event
+      
+      promise.then ~>
+        switch it?@@
+          | String => @changeState newStateName
+          | Object => @changeState it.state, (it.event or it.data)
+          | otherwise => throw Error "unknown response from promise: #{data?}"
+        
+      promise.catch ~> @changeState 'error', it
 
-      @trigger 'changestate', newStateName, prevStateName, event
-      if f = @['state_' + newStateName] then f.call @, prevStateName, event
-      if newState.visit then newState.visit prevStateName, event
-
-
-
+    
