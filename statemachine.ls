@@ -77,8 +77,6 @@ PromiseStateMachine = exports.PromiseStateMachine = StateMachine.extend4000 do
             | String => @changeState it
             | Object => @changeState it.state, (it.event or it.data)
             | otherwise => throw Error "unknown response from promise: #{data?}"), 
-          ((e) ~> 
-            console.log 'catch', e
-            @changeState 'error', e))
+          ((e) ~> @changeState 'error', e))
 
     

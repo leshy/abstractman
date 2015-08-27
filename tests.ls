@@ -73,6 +73,7 @@ exports.promise = (test) ->
       reject new Error 'some error'
       
     state_error: (fromState, data) ->
+      test.equal String(data), "Error: some error"
       test.deepEqual [ 'init', 'b', 'a' ], events
       test.done()
     

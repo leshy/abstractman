@@ -117,7 +117,6 @@
               throw Error("unknown response from promise: " + (typeof data != 'undefined' && data !== null));
             }
           }, function(e){
-            console.log('catch', e);
             return this$.changeState('error', e);
           });
         }

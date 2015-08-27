@@ -110,6 +110,7 @@
         });
       },
       state_error: function(fromState, data){
+        test.equal(String(data), "Error: some error");
         test.deepEqual(['init', 'b', 'a'], events);
         return test.done();
       }
