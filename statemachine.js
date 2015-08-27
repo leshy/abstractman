@@ -68,6 +68,7 @@
       var this$ = this;
       return _.defer(function(){
         var prevStateName, prevState, ref$;
+        console.log('changestate', newStateName);
         if (prevStateName = this$.state) {
           prevState = this$.getState(prevStateName);
           if (!((ref$ = prevState.children) != null && ref$[newStateName])) {
@@ -105,20 +106,21 @@
         newState.visit(prevStateName, event);
       }
       if (f = this['state_' + newStateName]) {
-        promise = f.call(this, prevStateName, event);
-        promise.then(function(it){
-          switch (it != null && it.constructor) {
-          case String:
-            return this$.changeState(newStateName);
-          case Object:
-            return this$.changeState(it.state, it.event || it.data);
-          default:
-            throw Error("unknown response from promise: " + (typeof data != 'undefined' && data !== null));
-          }
-        });
-        return promise['catch'](function(it){
-          return this$.changeState('error', it);
-        });
+        if (promise = f.call(this, prevStateName, event)) {
+          return promise.then(function(it){
+            switch (it != null && it.constructor) {
+            case String:
+              return this$.changeState(it);
+            case Object:
+              return this$.changeState(it.state, it.event || it.data);
+            default:
+              throw Error("unknown response from promise: " + (typeof data != 'undefined' && data !== null));
+            }
+          }, function(e){
+            console.log('catch', e);
+            return this$.changeState('error', e);
+          });
+        }
       }
     }
   });

@@ -45,6 +45,7 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
     
   changeState: (newStateName, event) ->
     _.defer ~> 
+      console.log 'changestate',newStateName
       if prevStateName = @state
         prevState = @getState prevStateName
         if not prevState.children?[newStateName]
@@ -70,14 +71,14 @@ PromiseStateMachine = exports.PromiseStateMachine = StateMachine.extend4000 do
     @trigger 'changestate', newStateName, prevStateName, event
     if newState.visit then newState.visit prevStateName, event
     if f = @['state_' + newStateName] then
-      promise = f.call @, prevStateName, event
-      
-      promise.then ~>
-        switch it?@@
-          | String => @changeState newStateName
-          | Object => @changeState it.state, (it.event or it.data)
-          | otherwise => throw Error "unknown response from promise: #{data?}"
-        
-      promise.catch ~> @changeState 'error', it
+      if promise = f.call @, prevStateName, event
+        promise.then( (~>
+          switch it?@@
+            | String => @changeState it
+            | Object => @changeState it.state, (it.event or it.data)
+            | otherwise => throw Error "unknown response from promise: #{data?}"), 
+          ((e) ~> 
+            console.log 'catch', e
+            @changeState 'error', e))
 
     
