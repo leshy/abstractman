@@ -77,8 +77,9 @@ PromiseStateMachine = exports.PromiseStateMachine = StateMachine.extend4000 do
 
           @trigger 'postchangestate', newStateName, prevStateName, (it.data? or it.event)
 
-
-          # this is just some sintax sugar, you don't nessesarily need to return the state to switch to, if you have only one possible state to switch to.
+          # just some sintax sugar,
+          # you don't nessesarily need to return the state to switch to,
+          # if you have only one possible state to switch to.
           checkOneChild = (childStateName) ~>
             switch it?@@
               | String =>
@@ -88,7 +89,6 @@ PromiseStateMachine = exports.PromiseStateMachine = StateMachine.extend4000 do
                 if it.state?@@ is String then return false
                 else @changeState childStateName, it
               | otherwise => @changeState childStatename, it
-
             return true
 
           if (keys = _.keys(newState.children)).length is 1
