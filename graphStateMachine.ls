@@ -58,7 +58,6 @@ State.addChild = (name) ->
 
 
 
-
 GraphStateMachine = exports.GraphStateMachine = Backbone.Model.extend4000 do
   stateClass: State
   

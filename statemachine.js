@@ -70,7 +70,7 @@
         var prevStateName, prevState, ref$;
         if (prevStateName = this$.state) {
           prevState = this$.getState(prevStateName);
-          if (!((ref$ = prevState.children) != null && ref$[newStateName])) {
+          if (newStateName !== 'error' && !((ref$ = prevState.children) != null && ref$[newStateName])) {
             throw new Error("invalid state change " + prevStateName + " -> " + newStateName);
           }
           if (prevState.leave) {
@@ -86,34 +86,66 @@
       var newState, f;
       newState = this.getState(newStateName);
       this.state = newStateName;
-      this.trigger('changestate', newStateName, prevStateName, event);
       if (newState.visit) {
         newState.visit(prevStateName, event);
       }
       if (f = this['state_' + newStateName]) {
-        return f.call(this, prevStateName, event);
+        f.call(this, prevStateName, event);
       }
+      return this.trigger('changestate', newStateName, prevStateName, event);
     }
   });
   PromiseStateMachine = exports.PromiseStateMachine = StateMachine.extend4000({
     runTriggers: function(prevStateName, newStateName, event){
       var newState, f, promise, this$ = this;
+      this.trigger('prechangestate', newStateName, prevStateName, event);
       newState = this.getState(newStateName);
       this.state = newStateName;
-      this.trigger('changestate', newStateName, prevStateName, event);
-      if (newState.visit) {
-        newState.visit(prevStateName, event);
-      }
       if (f = this['state_' + newStateName]) {
         if (promise = f.call(this, prevStateName, event)) {
           return promise.then(function(it){
+            var checkOneChild, keys;
+            if (newState.visit) {
+              newState.visit(prevStateName, event);
+            }
+            this$.trigger('postchangestate', newStateName, prevStateName, it.data != null || it.event);
+            checkOneChild = function(childStateName){
+              var ref$;
+              switch (it != null && it.constructor) {
+              case String:
+                if (newState.children[it]) {
+                  return false;
+                } else {
+                  this$.changeState(childStateName, it);
+                }
+                break;
+              case Object:
+                if (((ref$ = it.state) != null ? ref$.constructor : void 8) === String) {
+                  return false;
+                } else {
+                  this$.changeState(childStateName, it);
+                }
+                break;
+              default:
+                this$.changeState(childStatename, it);
+              }
+              return true;
+            };
+            if ((keys = _.keys(newState.children)).length === 1) {
+              if (checkOneChild(_.first(keys))) {
+                return true;
+              }
+            }
             switch (it != null && it.constructor) {
             case String:
               return this$.changeState(it);
             case Object:
-              return this$.changeState(it.state, it.event || it.data);
+              if (it.state) {
+                return this$.changeState(it.state, it.event || it.data);
+              }
+              break;
             default:
-              throw Error("unknown response from promise: " + (typeof data != 'undefined' && data !== null));
+              throw new Error("unknown response from promise: " + (typeof data != 'undefined' && data !== null));
             }
           }, function(e){
             return this$.changeState('error', e);

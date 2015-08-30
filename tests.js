@@ -120,6 +120,73 @@
       return console.log('changestate', oldStateName, '->', newStateName, event || "");
     });
   };
+  exports.promiseImplicit = function(test){
+    var events, SM, sm;
+    events = [];
+    SM = abstractman.PromiseStateMachine.extend4000({
+      state: 'init',
+      states: {
+        init: {
+          children: {
+            A: true,
+            B: true
+          }
+        },
+        A: {
+          children: {
+            B: true
+          }
+        },
+        B: {
+          child: 'A'
+        },
+        error: true
+      },
+      state_init: function(){
+        var this$ = this;
+        return new p(function(resolve, reject){
+          events.push('init');
+          return h.wait(100, function(){
+            return resolve({
+              state: 'B',
+              event: 8
+            });
+          });
+        });
+      },
+      state_B: function(fromState, data){
+        var this$ = this;
+        return new p(function(resolve, reject){
+          events.push('b');
+          test.equals(data, 8);
+          test.equals(fromState, 'init');
+          return resolve({
+            test: 3
+          });
+        });
+      },
+      state_A: function(fromState, data){
+        var this$ = this;
+        return new p(function(resolve, reject){
+          events.push('a');
+          test.deepEqual(data, {
+            test: 3
+          });
+          test.equals(fromState, "B");
+          return reject(new Error('some error'));
+        });
+      },
+      state_error: function(fromState, data){
+        test.equal(String(data), "Error: some error");
+        test.deepEqual(['init', 'b', 'a'], events);
+        return test.done();
+      }
+    });
+    sm = new SM();
+    return sm.on('changestate', function(newStateName, oldStateName, event){
+      return console.log('changestate', oldStateName, '->', newStateName, event || "");
+    });
+  };
   exports.stateMbasic = function(test){
     var Machine, statea, stated, machine;
     Machine = abstractman.GraphStateMachine.extend4000({
