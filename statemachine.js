@@ -16,13 +16,10 @@
   StateMachine = exports.StateMachine = Backbone.Model.extend4000({
     stateClass: State,
     initialize: function(options){
-      var name, this$ = this;
+      var name;
       options == null && (options = {});
       this._states = {};
       _.extend(this, options);
-      this.on('change:state', function(self, name){
-        return this$.changeState(name);
-      });
       if (name = options.state || this.state || this.get('state')) {
         return this.runTriggers(false, name, false);
       }
@@ -66,20 +63,22 @@
     },
     changeState: function(newStateName, event){
       var this$ = this;
+      console.log("changestate", this.name, newStateName, event);
       return _.defer(function(){
         var prevStateName, prevState, ref$;
         if (prevStateName = this$.state) {
           prevState = this$.getState(prevStateName);
           if (newStateName !== 'error' && !((ref$ = prevState.children) != null && ref$[newStateName])) {
+            console.log("invalid state change " + prevStateName + " -> " + newStateName);
             throw new Error("invalid state change " + prevStateName + " -> " + newStateName);
           }
           if (prevState.leave) {
             prevState.leave(newStateName, event);
           }
-          return _.defer(function(){
-            return this$.runTriggers(prevStateName, newStateName, event);
-          });
         }
+        return _.defer(function(){
+          return this$.runTriggers(prevStateName, newStateName, event);
+        });
       });
     },
     runTriggers: function(prevStateName, newStateName, event){
@@ -89,10 +88,14 @@
       if (newState.visit) {
         newState.visit(prevStateName, event);
       }
+      this.set({
+        state: newStateName
+      });
       if (f = this['state_' + newStateName]) {
-        f.call(this, prevStateName, event);
+        f.call(this, event, prevStateName);
       }
-      return this.trigger('changestate', newStateName, prevStateName, event);
+      this.trigger('state_' + newStateName, event, prevStateName);
+      return this.trigger('changestate', newStateName, event, prevStateName);
     }
   });
   PromiseStateMachine = exports.PromiseStateMachine = StateMachine.extend4000({
@@ -108,7 +111,11 @@
             if (newState.visit) {
               newState.visit(prevStateName, event);
             }
-            this$.trigger('postchangestate', newStateName, prevStateName, it.data != null || it.event);
+            this$.set({
+              state: newStateName
+            });
+            this$.trigger('changestate', newStateName, (it != null ? it.data : void 8) || (it != null ? it.event : void 8) || it, prevStateName);
+            this$.trigger('state_' + newStateName, (it != null ? it.data : void 8) || (it != null ? it.event : void 8) || it, prevStateName);
             checkOneChild = function(childStateName){
               var ref$;
               switch (it != null && it.constructor) {
@@ -127,7 +134,7 @@
                 }
                 break;
               default:
-                this$.changeState(childStatename, it);
+                this$.changeState(childStateName, it);
               }
               return true;
             };

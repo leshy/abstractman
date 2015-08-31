@@ -16,9 +16,10 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
     @_states = {}
     _.extend @, options
     
-    @on 'change:state', (self,name) ~> @changeState name
+    #@on 'change:state', (self,name) ~> @changeState name
     if name = options.state or @state or @get('state') then @runTriggers false, name, false
-  
+    
+    
   getState: (name) ->
     if stateInstance = @_states[name] then return stateInstance
     
@@ -44,24 +45,29 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
     @_states[name] = stateInstance
     
   changeState: (newStateName, event) ->
+    console.log "changestate", @name, newStateName, event
+    
     _.defer ~> 
       if prevStateName = @state
         prevState = @getState prevStateName
         if newStateName isnt 'error' and not prevState.children?[newStateName]
+          console.log "invalid state change #{prevStateName} -> #{newStateName}"
           throw new Error "invalid state change #{prevStateName} -> #{newStateName}"
         if prevState.leave then prevState.leave newStateName, event
 
-        _.defer ~> @runTriggers prevStateName, newStateName, event
+      _.defer ~> @runTriggers prevStateName, newStateName, event
 
 
   runTriggers: (prevStateName, newStateName, event) ->     
     newState = @getState newStateName
     @state = newStateName
-
+    
     if newState.visit then newState.visit prevStateName, event
-    if f = @['state_' + newStateName] then f.call @, prevStateName, event
-    @trigger 'changestate', newStateName, prevStateName, event
-
+    @set state: newStateName
+    if f = @['state_' + newStateName] then f.call @, event, prevStateName
+    @trigger 'state_' + newStateName, event, prevStateName
+    @trigger 'changestate', newStateName, event, prevStateName
+    
 
 PromiseStateMachine = exports.PromiseStateMachine = StateMachine.extend4000 do
   runTriggers: (prevStateName, newStateName, event) ->
@@ -74,9 +80,10 @@ PromiseStateMachine = exports.PromiseStateMachine = StateMachine.extend4000 do
       if promise = f.call @, prevStateName, event
         promise.then((~>
           if newState.visit then newState.visit prevStateName, event
-
-          @trigger 'postchangestate', newStateName, prevStateName, (it.data? or it.event)
-
+          @set state: newStateName
+          @trigger 'changestate', newStateName, (it?.data or it?.event or it), prevStateName
+          @trigger 'state_' + newStateName, (it?.data or it?.event or it), prevStateName
+          
           # just some sintax sugar,
           # you don't nessesarily need to return the state to switch to,
           # if you have only one possible state to switch to.
@@ -88,7 +95,7 @@ PromiseStateMachine = exports.PromiseStateMachine = StateMachine.extend4000 do
               | Object =>
                 if it.state?@@ is String then return false
                 else @changeState childStateName, it
-              | otherwise => @changeState childStatename, it
+              | otherwise => @changeState childStateName, it
             return true
 
           if (keys = _.keys(newState.children)).length is 1

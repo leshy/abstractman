@@ -82,7 +82,6 @@ exports.promise = (test) ->
   sm.on 'changestate', (newStateName, oldStateName, event) ->
     console.log 'changestate', oldStateName, '->', newStateName, (event or "")
 
-
 exports.promiseImplicit = (test) ->
   events = []
   SM = abstractman.PromiseStateMachine.extend4000 do
