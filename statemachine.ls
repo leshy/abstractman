@@ -9,6 +9,8 @@ State = Backbone.Model.extend4000 do
   initialize: (options) -> _.extend @, options
   changeState: (name, event) -> @root.changeState name, event
 
+initEvent = { init: true}
+
 StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
   stateClass: State
     
@@ -17,15 +19,13 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
     _.extend @, options
     
     #@on 'change:state', (self,name) ~> @changeState name
-    if name = options.state or @state or @get('state') then @runTriggers false, name, false
+    if name = options.state or @state or @get('state') then @changeState name, initEvent
     
     
   getState: (name) ->
     if stateInstance = @_states[name] then return stateInstance
-    
     stateDef = @states[name]
-    
-    if not stateDef then throw "state definition for #{name} not found"
+    if not stateDef then throw new Error "state definition for #{name} not found"
     
     instantiate = (def={}) ~>
       # just a syntax sugar
@@ -44,68 +44,93 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
 
     @_states[name] = stateInstance
     
-  changeState: (newStateName, event) ->
-    console.log "changestate", @name, newStateName, event
     
-    _.defer ~> 
-      if prevStateName = @state
-        prevState = @getState prevStateName
-        if newStateName isnt 'error' and not prevState.children?[newStateName]
-          console.log "invalid state change #{prevStateName} -> #{newStateName}"
-          throw new Error "invalid state change #{prevStateName} -> #{newStateName}"
-        if prevState.leave then prevState.leave newStateName, event
-
-      _.defer ~> @runTriggers prevStateName, newStateName, event
-
-
-  runTriggers: (prevStateName, newStateName, event) ->     
-    newState = @getState newStateName
-    @state = newStateName
+  executeState: (prevStateName, newStateName, entryEvent, callback) ->
+    if f = @['state_' + newStateName]
+      try
+        callback void, f.call @, entryEvent, prevStateName
+      catch error
+        console.log "ERROR EXECUTING", newStateName, error
+        console.log error.stack
+        callback error
+    else callback void, entryEvent
     
-    if newState.visit then newState.visit prevStateName, event
-    @set state: newStateName
-    if f = @['state_' + newStateName] then f.call @, event, prevStateName
-    @trigger 'state_' + newStateName, event, prevStateName
-    @trigger 'changestate', newStateName, event, prevStateName
-    
+  parseExitEvent: (state, data, cb) -> cb void, void, data
 
-PromiseStateMachine = exports.PromiseStateMachine = StateMachine.extend4000 do
-  runTriggers: (prevStateName, newStateName, event) ->
-    @trigger 'prechangestate', newStateName, prevStateName, event
-    
-    newState = @getState newStateName
-    @state = newStateName
-
-    if f = @['state_' + newStateName] then
-      if promise = f.call @, prevStateName, event
-        promise.then((~>
-          if newState.visit then newState.visit prevStateName, event
-          @set state: newStateName
-          @trigger 'changestate', newStateName, (it?.data or it?.event or it), prevStateName
-          @trigger 'state_' + newStateName, (it?.data or it?.event or it), prevStateName
-          
-          # just some sintax sugar,
-          # you don't nessesarily need to return the state to switch to,
-          # if you have only one possible state to switch to.
-          checkOneChild = (childStateName) ~>
-            switch it?@@
-              | String =>
-                if newState.children[it] then return false
-                else @changeState(childStateName, it)
-              | Object =>
-                if it.state?@@ is String then return false
-                else @changeState childStateName, it
-              | otherwise => @changeState childStateName, it
-            return true
-
-          if (keys = _.keys(newState.children)).length is 1
-            if checkOneChild(_.first(keys)) then return true
-                                          
-          switch it?@@
-            | String => @changeState it
-            | Object =>
-              if it.state then @changeState(it.state, (it.event or it.data))
-            | otherwise => throw new Error "unknown response from promise: #{data?}"), 
-          ((e) ~> @changeState 'error', e))
+  changeState: (newStateName, entryEvent) -> _.defer ~>
+    if prevStateName = @state
+      prevState = @getState prevStateName
       
+      if entryEvent isnt initEvent and newStateName isnt 'error' and not prevState.children?[newStateName]
+        console.log "invalid state change #{prevStateName} -> #{newStateName}"
+        throw new Error "invalid state change #{prevStateName} -> #{newStateName}"
+          
+    newState = @getState newStateName
+    @state = newStateName
     
+    @trigger 'prechangestate', newStateName, entryEvent, prevStateName
+    @trigger 'pre_state_' + newStateName, entryEvent, prevStateName
+
+#    console.log 'state executing:', @name, newStateName, 'from', prevStateName, entryEvent
+
+    @executeState prevStateName, newStateName, entryEvent, (errEvent, exitEvent, nextStateName) ~>
+#      console.log "state executed:", @name, newStateName, 'data:', errEvent, exitEvent
+      if errEvent
+        if newStateName isnt 'error' then return @changeState 'error', errEvent
+        else console.log "error changing state to error, avoiding loop"
+      
+      @parseExitEvent newState, exitEvent, (err, nextStateName, exitEvent) ~>
+        if err
+          console.log "error at state", newStateName
+          throw err
+          
+        @set state: newStateName
+        @trigger 'state_' + newStateName, exitEvent, prevStateName
+        @trigger 'changestate', newStateName, exitEvent, prevStateName
+        if @onChangeState then @onChangeState newStateName, exitEvent, prevStateName
+        if nextStateName then @changeState nextStateName, exitEvent
+
+
+Mixins = exports.Mixins = {}
+
+Mixins.exitEvent = {}
+
+Mixins.exitEvent.NextState = do
+  parseExitEvent: (state, data, cb) ->
+    if (children = _.keys(state.children)).length is 1
+      childName = _.first children
+      if data === false then return cb!
+      else return cb void, childName, data
+      
+    else
+      if not data then return cb!
+
+      switch data@@
+        | String =>
+          if state.children?[data] then cb void, data
+          else cb void, void, data
+
+        | Object =>
+          if data.state then cb void, data.state, (data.data or data.event)
+          else cb void, void, data
+          
+        | otherwise => cb void, void, data  
+
+
+PromiseStateMachine = exports.PromiseStateMachine = StateMachine.extend4000 Mixins.exitEvent.NextState, do
+  executeState: (prevStateName, newStateName, entryEvent, callback) ->
+    if f = @['state_' + newStateName]
+      try
+        promise = f.call @, entryEvent, prevStateName
+      catch error
+        return callback error
+      
+      if promise.then? then promise.then(
+        ( -> callback void, it ),
+        ((error) ~> callback error))
+        
+      else return callback void, promise
+    else callback void, void
+    
+    
+  

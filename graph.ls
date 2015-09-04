@@ -16,8 +16,6 @@ metaPlug = (cls) ->
   if cls::plugs then h.dictMap cls::plugs, makePlugFunctions
   return cls
 
-
-
 GraphNode = exports.GraphNode = Backbone.Model.extend4000(
   name: 'graphnode'
   mergers: [ Backbone.metaMerger.mergeDict('plugs') ]
@@ -38,10 +36,9 @@ GraphNode = exports.GraphNode = Backbone.Model.extend4000(
 )
 
 
-
-
 DirectedGraphNode = exports.DirectedGraphNode = GraphNode.extend4000(
   plugs: {
     parents: { singular: 'parent' }
     children: { singular: 'child' }
   })
+
