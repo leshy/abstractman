@@ -9,7 +9,7 @@ State = Backbone.Model.extend4000 do
   initialize: (options) -> _.extend @, options
   changeState: (name, event) -> @root.changeState name, event
 
-initEvent = { init: true}
+initEvent = exports.initEvent = { init: true}
 
 StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
   stateClass: State
@@ -77,7 +77,7 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
 #      console.log "state executed:", @name, newStateName, 'data:', errEvent, exitEvent
       if errEvent
         if newStateName isnt 'error' then return @changeState 'error', errEvent
-        else console.log "error changing state to error, avoiding loop"
+        else console.log "error changing state to error, avoiding loop", errEvent, errEvent.stack
       
       @parseExitEvent newState, exitEvent, (err, nextStateName, exitEvent) ~>
         if err
@@ -87,7 +87,7 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
         @set state: newStateName
         @trigger 'state_' + newStateName, exitEvent, prevStateName
         @trigger 'changestate', newStateName, exitEvent, prevStateName
-        if @onChangeState then @onChangeState newStateName, exitEvent, prevStateName
+        if @onChangeState then @onChangeState newStateName, exitEvent, prevStateName, entryEvent
         if nextStateName then @changeState nextStateName, exitEvent
 
 

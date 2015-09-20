@@ -13,7 +13,7 @@
       return this.root.changeState(name, event);
     }
   });
-  initEvent = {
+  initEvent = exports.initEvent = {
     init: true
   };
   StateMachine = exports.StateMachine = Backbone.Model.extend4000({
@@ -102,7 +102,7 @@
             if (newStateName !== 'error') {
               return this$.changeState('error', errEvent);
             } else {
-              console.log("error changing state to error, avoiding loop");
+              console.log("error changing state to error, avoiding loop", errEvent, errEvent.stack);
             }
           }
           return this$.parseExitEvent(newState, exitEvent, function(err, nextStateName, exitEvent){
@@ -116,7 +116,7 @@
             this$.trigger('state_' + newStateName, exitEvent, prevStateName);
             this$.trigger('changestate', newStateName, exitEvent, prevStateName);
             if (this$.onChangeState) {
-              this$.onChangeState(newStateName, exitEvent, prevStateName);
+              this$.onChangeState(newStateName, exitEvent, prevStateName, entryEvent);
             }
             if (nextStateName) {
               return this$.changeState(nextStateName, exitEvent);
