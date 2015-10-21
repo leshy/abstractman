@@ -9,7 +9,7 @@ State = Backbone.Model.extend4000 do
   initialize: (options) -> _.extend @, options
   changeState: (name, event) -> @root.changeState name, event
 
-initEvent = exports.initEvent = { init: true}
+initEvent = exports.initEvent = 'init'
 
 StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
   stateClass: State
@@ -19,9 +19,11 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
     _.extend @, options
     
     #@on 'change:state', (self,name) ~> @changeState name
-    if name = options.state or @state or @get('state') then @changeState name, initEvent
-    
-    
+    if options.state then @state = options.state
+    if @autoStartSm then @startSm
+  startSm: ->
+    if name = @state or @get('state') then @changeState name, initEvent
+        
   getState: (name) ->
     if stateInstance = @_states[name] then return stateInstance
     stateDef = @states[name]
@@ -62,7 +64,7 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
       prevState = @getState prevStateName
       
       if entryEvent isnt initEvent and newStateName isnt 'error' and not prevState.children?[newStateName]
-        console.log "invalid state change #{prevStateName} -> #{newStateName}"
+        #console.log "invalid state change #{prevStateName} -> #{newStateName}"
         throw new Error "invalid state change #{prevStateName} -> #{newStateName}"
           
     newState = @getState newStateName
@@ -71,10 +73,7 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
     @trigger 'prechangestate', newStateName, entryEvent, prevStateName
     @trigger 'pre_state_' + newStateName, entryEvent, prevStateName
 
-#    console.log 'state executing:', @name, newStateName, 'from', prevStateName, entryEvent
-
     @executeState prevStateName, newStateName, entryEvent, (errEvent, exitEvent, nextStateName) ~>
-#      console.log "state executed:", @name, newStateName, 'data:', errEvent, exitEvent
       if errEvent
         if newStateName isnt 'error' then return @changeState 'error', errEvent
         else console.log "error changing state to error, avoiding loop", errEvent, errEvent.stack
@@ -85,8 +84,12 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
           throw err
           
         @set state: newStateName
+
+        # so ugly I puked a bit, refactor this.
+        if exitEvent != initEvent and f = @['post_state_' + prevStateName] then f.call @, newStateName, exitEvent
         @trigger 'state_' + newStateName, exitEvent, prevStateName
         @trigger 'changestate', newStateName, exitEvent, prevStateName
+        
         if @onChangeState then @onChangeState newStateName, exitEvent, prevStateName, entryEvent
         if nextStateName then @changeState nextStateName, exitEvent
 

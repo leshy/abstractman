@@ -1,24 +1,68 @@
 {
-  "name": "abstractman",
-  "version": "1.0.0",
-  "description": "abstractman",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "_args": [
+    [
+      "abstractman@git://github.com/leshy/abstractman.git",
+      "/home/lesh/coding/bitcoin/bomber"
+    ]
+  ],
+  "_from": "git://github.com/leshy/abstractman.git",
+  "_id": "abstractman@1.0.0",
+  "_inCache": true,
+  "_location": "/abstractman",
+  "_phantomChildren": {},
+  "_requested": {
+    "hosted": {
+      "directUrl": "https://raw.githubusercontent.com/leshy/abstractman/master/package.json",
+      "gitUrl": "git://github.com/leshy/abstractman.git",
+      "httpsUrl": "git+https://github.com/leshy/abstractman.git",
+      "shortcut": "github:leshy/abstractman",
+      "ssh": "git@github.com:leshy/abstractman.git",
+      "sshUrl": "git+ssh://git@github.com/leshy/abstractman.git",
+      "type": "github"
+    },
+    "name": "abstractman",
+    "raw": "abstractman@git://github.com/leshy/abstractman.git",
+    "rawSpec": "git://github.com/leshy/abstractman.git",
+    "scope": null,
+    "spec": "git://github.com/leshy/abstractman.git",
+    "type": "hosted"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/leshy/abstractman.git"
+  "_requiredBy": [
+    "/"
+  ],
+  "_resolved": "git://github.com/leshy/abstractman.git#5e909c90b527d88f82332248d554c70c2d72e9bc",
+  "_shasum": "a624836f250513bab0ca5dc4ef07047ea244d0bf",
+  "_shrinkwrap": null,
+  "_spec": "abstractman@git://github.com/leshy/abstractman.git",
+  "_where": "/home/lesh/coding/bitcoin/bomber",
+  "author": {
+    "name": "lesh"
+  },
+  "bugs": {
+    "url": "https://github.com/leshy/abstractman/issues"
   },
   "dependencies": {
     "backbone4000": "git://github.com/leshy/backbone4000.git",
     "bluebird": "^2.9.34",
     "helpers": "git://github.com/leshy/nodejs-helpers.git"
   },
-  "author": "lesh",
+  "description": "abstractman",
+  "devDependencies": {},
+  "gitHead": "5e909c90b527d88f82332248d554c70c2d72e9bc",
+  "homepage": "https://github.com/leshy/abstractman#readme",
+  "installable": true,
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/leshy/abstractman/issues"
+  "main": "index.js",
+  "name": "abstractman",
+  "optionalDependencies": {},
+  "readme": "abstractman\n===========\nheavy metaclass use from [backbone4000](https://github.com/leshy/backbone4000)\n\n- graph objects (directed/bidirectional, graph nodes belonging to multiple graph networks (see \"plugs\" in [graph.ls](https://github.com/leshy/abstractman/blob/master/graph.ls)) )\n- simple (fast) finite state machines\n- advanced dynamic (not so finite) state machines on top of graph objects\n \nfor now, see [tests](https://github.com/leshy/abstractman/blob/master/tests.ls) for documentation.\n\ngraphs can display themselves in ubigraph via [nodejs-ubigraph](https://github.com/leshy/nodejs-ubigraph)\n    \n![statemachine!](https://raw.githubusercontent.com/leshy/abstractman/master/statemachine.png)\n",
+  "readmeFilename": "readme.md",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leshy/abstractman.git"
   },
-  "homepage": "https://github.com/leshy/abstractman#readme"
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "1.0.0"
 }

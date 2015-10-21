@@ -1,4 +1,5 @@
 #!/usr/bin/lsc
+
 require! {
   backbone4000: backbone
   helpers: h
@@ -8,5 +9,3 @@ require! {
 _.extend exports, require './graph'
 _.extend exports, require './statemachine'
 _.extend exports, require './graphStateMachine'
-
-

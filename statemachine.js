@@ -13,17 +13,23 @@
       return this.root.changeState(name, event);
     }
   });
-  initEvent = exports.initEvent = {
-    init: true
-  };
+  initEvent = exports.initEvent = 'init';
   StateMachine = exports.StateMachine = Backbone.Model.extend4000({
     stateClass: State,
     initialize: function(options){
-      var name;
       options == null && (options = {});
       this._states = {};
       _.extend(this, options);
-      if (name = options.state || this.state || this.get('state')) {
+      if (options.state) {
+        this.state = options.state;
+      }
+      if (this.autoStartSm) {
+        return this.startSm;
+      }
+    },
+    startSm: function(){
+      var name;
+      if (name = this.state || this.get('state')) {
         return this.changeState(name, initEvent);
       }
     },
@@ -89,7 +95,6 @@
         if (prevStateName = this$.state) {
           prevState = this$.getState(prevStateName);
           if (entryEvent !== initEvent && newStateName !== 'error' && !((ref$ = prevState.children) != null && ref$[newStateName])) {
-            console.log("invalid state change " + prevStateName + " -> " + newStateName);
             throw new Error("invalid state change " + prevStateName + " -> " + newStateName);
           }
         }
@@ -106,6 +111,7 @@
             }
           }
           return this$.parseExitEvent(newState, exitEvent, function(err, nextStateName, exitEvent){
+            var f;
             if (err) {
               console.log("error at state", newStateName);
               throw err;
@@ -113,6 +119,9 @@
             this$.set({
               state: newStateName
             });
+            if (exitEvent !== initEvent && (f = this$['post_state_' + prevStateName])) {
+              f.call(this$, newStateName, exitEvent);
+            }
             this$.trigger('state_' + newStateName, exitEvent, prevStateName);
             this$.trigger('changestate', newStateName, exitEvent, prevStateName);
             if (this$.onChangeState) {
