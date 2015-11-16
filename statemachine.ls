@@ -19,8 +19,12 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
     _.extend @, options
     
     #@on 'change:state', (self,name) ~> @changeState name
-    if options.state then @state = options.state
+    if options.state then @setState options.state
+    else if @state then @setState @state
+    else if state = @get('state') then @setState state
+    
     if @autoStartSm then @startSm
+      
   startSm: ->
     if name = @state or @get('state') then @changeState name, initEvent
         
@@ -58,20 +62,23 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
     else callback void, entryEvent
     
   parseExitEvent: (state, data, cb) -> cb void, void, data
-
+  
+  setState: (state) ->
+    @state = state
+    @set state: state
+    
   changeState: (newStateName, entryEvent) -> _.defer ~>
     if prevStateName = @state
       prevState = @getState prevStateName
       
       if entryEvent isnt initEvent and newStateName isnt 'error' and not prevState.children?[newStateName]
-        #console.log "invalid state change #{prevStateName} -> #{newStateName}"
         throw new Error "invalid state change #{prevStateName} -> #{newStateName}"
           
     newState = @getState newStateName
-    @state = newStateName
     
     @trigger 'prechangestate', newStateName, entryEvent, prevStateName
     @trigger 'pre_state_' + newStateName, entryEvent, prevStateName
+    @trigger 'leave_state_' + prevStateName, entryEvent, newStateName
 
     @executeState prevStateName, newStateName, entryEvent, (errEvent, exitEvent, nextStateName) ~>
       if errEvent
@@ -83,10 +90,10 @@ StateMachine = exports.StateMachine = Backbone.Model.extend4000 do
           console.log "error at state", newStateName
           throw err
           
-        @set state: newStateName
+        @setState newStateName
 
         # so ugly I puked a bit, refactor this.
-        if exitEvent != initEvent and f = @['post_state_' + prevStateName] then f.call @, newStateName, exitEvent
+        if entryEvent != initEvent and f = @['post_state_' + prevStateName] then f.call @, newStateName, exitEvent
         @trigger 'state_' + newStateName, exitEvent, prevStateName
         @trigger 'changestate', newStateName, exitEvent, prevStateName
         

@@ -17,11 +17,16 @@
   StateMachine = exports.StateMachine = Backbone.Model.extend4000({
     stateClass: State,
     initialize: function(options){
+      var state;
       options == null && (options = {});
       this._states = {};
       _.extend(this, options);
       if (options.state) {
-        this.state = options.state;
+        this.setState(options.state);
+      } else if (this.state) {
+        this.setState(this.state);
+      } else if (state = this.get('state')) {
+        this.setState(state);
       }
       if (this.autoStartSm) {
         return this.startSm;
@@ -88,6 +93,12 @@
     parseExitEvent: function(state, data, cb){
       return cb(void 8, void 8, data);
     },
+    setState: function(state){
+      this.state = state;
+      return this.set({
+        state: state
+      });
+    },
     changeState: function(newStateName, entryEvent){
       var this$ = this;
       return _.defer(function(){
@@ -99,9 +110,9 @@
           }
         }
         newState = this$.getState(newStateName);
-        this$.state = newStateName;
         this$.trigger('prechangestate', newStateName, entryEvent, prevStateName);
         this$.trigger('pre_state_' + newStateName, entryEvent, prevStateName);
+        this$.trigger('leave_state_' + prevStateName, entryEvent, newStateName);
         return this$.executeState(prevStateName, newStateName, entryEvent, function(errEvent, exitEvent, nextStateName){
           if (errEvent) {
             if (newStateName !== 'error') {
@@ -116,10 +127,8 @@
               console.log("error at state", newStateName);
               throw err;
             }
-            this$.set({
-              state: newStateName
-            });
-            if (exitEvent !== initEvent && (f = this$['post_state_' + prevStateName])) {
+            this$.setState(newStateName);
+            if (entryEvent !== initEvent && (f = this$['post_state_' + prevStateName])) {
               f.call(this$, newStateName, exitEvent);
             }
             this$.trigger('state_' + newStateName, exitEvent, prevStateName);
