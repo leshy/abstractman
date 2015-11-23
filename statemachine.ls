@@ -135,7 +135,7 @@ PromiseStateMachine = exports.PromiseStateMachine = StateMachine.extend4000 Mixi
       catch error
         return callback error
       
-      if promise.then? then promise.then(
+      if promise?then? then promise.then(
         ( -> callback void, it ),
         ((error) ~> callback error))
         

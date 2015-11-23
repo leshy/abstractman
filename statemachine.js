@@ -191,7 +191,7 @@
           error = e$;
           return callback(error);
         }
-        if (promise.then != null) {
+        if ((promise != null ? promise.then : void 8) != null) {
           return promise.then(function(it){
             return callback(void 8, it);
           }, function(error){
